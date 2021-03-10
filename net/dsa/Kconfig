@@ -106,5 +106,11 @@ config NET_DSA_TAG_TRAILER
 	help
 	  Say Y or M if you want to enable support for tagging frames at
 	  with a trailed. e.g. Marvell 88E6060.
+	  
+config NET_DSA_TAG_INNOROUTE
+	tristate "Tag driver for InnoRoute timestamping"
+	help
+	  Say Y or M if you want to enable support for tagging frames at
+	  with a trailed. e.g. InnoRoute realtime HAT.
 
 endif

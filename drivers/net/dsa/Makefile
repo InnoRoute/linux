@@ -3,7 +3,7 @@ obj-$(CONFIG_NET_DSA_BCM_SF2)	+= bcm-sf2.o
 bcm-sf2-objs			:= bcm_sf2.o bcm_sf2_cfp.o
 obj-$(CONFIG_NET_DSA_LOOP)	+= dsa_loop.o
 ifdef CONFIG_NET_DSA_LOOP
-obj-$(CONFIG_FIXED_PHY)		+= dsa_loop_bdinfo.o
+obj-$(CONFIG_NET_DSA_LOOP)		+= dsa_loop_bdinfo.o
 endif
 obj-$(CONFIG_NET_DSA_LANTIQ_GSWIP) += lantiq_gswip.o
 obj-$(CONFIG_NET_DSA_MT7530)	+= mt7530.o
@@ -21,3 +21,4 @@ obj-y				+= b53/
 obj-y				+= microchip/
 obj-y				+= mv88e6xxx/
 obj-y				+= sja1105/
+obj-y				+= inr_rt_hat/

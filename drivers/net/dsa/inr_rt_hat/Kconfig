@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: GPL-2.0-only
+config INRRTHAT
+	tristate "InnoRoute Realtime HAT DSA support"
+	depends on NET_DSA
+	select NET_DSA_TAG_INNOROUTE
+	select FIXED_PHY
+	select NETWORK_PHY_TIMESTAMPING
+	select PTP_1588_CLOCK
+	help
+	  This driver adds support for InnoRoute Realtime HAT raspberry Addon

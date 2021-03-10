@@ -40,10 +40,12 @@
 #include <linux/ipv6.h>
 #include <linux/phy.h>
 #include <linux/platform_data/bcmgenet.h>
+#include <linux/ptp_clock_kernel.h>
 
 #include <asm/unaligned.h>
 
 #include "bcmgenet.h"
+
 
 /* Maximum number of hardware queues, downsized if needed */
 #define GENET_MAX_MQ_CNT	4
@@ -56,7 +58,7 @@
 #define GENET_Q16_TX_BD_CNT	\
 	(TOTAL_DESC - priv->hw_params->tx_queues * priv->hw_params->tx_bds_per_q)
 
-#define RX_BUF_LENGTH		2048
+#define RX_BUF_LENGTH		2240
 #define SKB_ALIGNMENT		32
 
 /* Tx/Rx DMA register offset, skip 256 descriptors */
@@ -74,6 +76,8 @@ static void bcmgenet_set_rx_mode(struct net_device *dev);
 static bool skip_umac_reset = true;
 module_param(skip_umac_reset, bool, 0444);
 MODULE_PARM_DESC(skip_umac_reset, "Skip UMAC reset step");
+
+
 
 static inline void bcmgenet_writel(u32 value, void __iomem *offset)
 {
@@ -1133,6 +1137,7 @@ static const struct ethtool_ops bcmgenet_ethtool_ops = {
 	.get_link_ksettings	= bcmgenet_get_link_ksettings,
 	.set_link_ksettings	= bcmgenet_set_link_ksettings,
 	.get_ts_info		= ethtool_op_get_ts_info,
+
 };
 
 /* Power down the unimac, based on mode. */
@@ -3536,6 +3541,7 @@ static int bcmgenet_probe(struct platform_device *pdev)
 
 	priv->dev = dev;
 	priv->pdev = pdev;
+	
 	if (of_id)
 		priv->version = (enum bcmgenet_version)of_id->data;
 	else
@@ -3582,6 +3588,7 @@ static int bcmgenet_probe(struct platform_device *pdev)
 	if (err)
 		goto err_clk_disable;
 
+  
 	/* setup number of real queues  + 1 (GENET_V1 has 0 hardware queues
 	 * just the ring 16 descriptor based TX
 	 */
@@ -3618,7 +3625,7 @@ err:
 static int bcmgenet_remove(struct platform_device *pdev)
 {
 	struct bcmgenet_priv *priv = dev_to_priv(&pdev->dev);
-
+	
 	dev_set_drvdata(&pdev->dev, NULL);
 	unregister_netdev(priv->dev);
 	bcmgenet_mii_exit(priv->dev);
