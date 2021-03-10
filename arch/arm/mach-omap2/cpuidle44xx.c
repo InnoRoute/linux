@@ -122,7 +122,6 @@ static int omap_enter_idle_coupled(struct cpuidle_device *dev,
 {
 	struct idle_statedata *cx = state_ptr + index;
 	u32 mpuss_can_lose_context = 0;
-	int error;
 
 	/*
 	 * CPU0 has to wait and stay ON until CPU1 is OFF state.
@@ -160,9 +159,7 @@ static int omap_enter_idle_coupled(struct cpuidle_device *dev,
 	 * Call idle CPU PM enter notifier chain so that
 	 * VFP and per CPU interrupt context is saved.
 	 */
-	error = cpu_pm_enter();
-	if (error)
-		goto cpu_pm_out;
+	cpu_pm_enter();
 
 	if (dev->cpu == 0) {
 		pwrdm_set_logic_retst(mpu_pd, cx->mpu_logic_state);
@@ -172,16 +169,8 @@ static int omap_enter_idle_coupled(struct cpuidle_device *dev,
 		 * Call idle CPU cluster PM enter notifier chain
 		 * to save GIC and wakeupgen context.
 		 */
-		if (mpuss_can_lose_context) {
-			error = cpu_cluster_pm_enter();
-			if (error) {
-				index = 0;
-				cx = state_ptr + index;
-				pwrdm_set_logic_retst(mpu_pd, cx->mpu_logic_state);
-				omap_set_pwrdm_state(mpu_pd, cx->mpu_state);
-				mpuss_can_lose_context = 0;
-			}
-		}
+		if (mpuss_can_lose_context)
+			cpu_cluster_pm_enter();
 	}
 
 	omap4_enter_lowpower(dev->cpu, cx->cpu_state);
@@ -209,19 +198,18 @@ static int omap_enter_idle_coupled(struct cpuidle_device *dev,
 	}
 
 	/*
+	 * Call idle CPU PM exit notifier chain to restore
+	 * VFP and per CPU IRQ context.
+	 */
+	cpu_pm_exit();
+
+	/*
 	 * Call idle CPU cluster PM exit notifier chain
 	 * to restore GIC and wakeupgen context.
 	 */
 	if (dev->cpu == 0 && mpuss_can_lose_context)
 		cpu_cluster_pm_exit();
 
-	/*
-	 * Call idle CPU PM exit notifier chain to restore
-	 * VFP and per CPU IRQ context.
-	 */
-	cpu_pm_exit();
-
-cpu_pm_out:
 	tick_broadcast_exit();
 
 fail:

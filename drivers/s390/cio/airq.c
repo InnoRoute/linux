@@ -105,12 +105,16 @@ static irqreturn_t do_airq_interrupt(int irq, void *dummy)
 	return IRQ_HANDLED;
 }
 
+static struct irqaction airq_interrupt = {
+	.name	 = "AIO",
+	.handler = do_airq_interrupt,
+};
+
 void __init init_airq_interrupts(void)
 {
 	irq_set_chip_and_handler(THIN_INTERRUPT,
 				 &dummy_irq_chip, handle_percpu_irq);
-	if (request_irq(THIN_INTERRUPT, do_airq_interrupt, 0, "AIO", NULL))
-		panic("Failed to register AIO interrupt\n");
+	setup_irq(THIN_INTERRUPT, &airq_interrupt);
 }
 
 static inline unsigned long iv_size(unsigned long bits)

@@ -344,6 +344,10 @@ static void advk_pcie_setup_hw(struct advk_pcie *pcie)
 
 	advk_pcie_wait_for_link(pcie);
 
+	reg = PCIE_CORE_LINK_L0S_ENTRY |
+		(1 << PCIE_CORE_LINK_WIDTH_SHIFT);
+	advk_writel(pcie, reg, PCIE_CORE_LINK_CTRL_STAT_REG);
+
 	reg = advk_readl(pcie, PCIE_CORE_CMD_STATUS_REG);
 	reg |= PCIE_CORE_CMD_MEM_ACCESS_EN |
 		PCIE_CORE_CMD_IO_ACCESS_EN |
@@ -503,7 +507,7 @@ static struct pci_bridge_emul_ops advk_pci_bridge_emul_ops = {
  * Initialize the configuration space of the PCI-to-PCI bridge
  * associated with the given PCIe interface.
  */
-static int advk_sw_pci_bridge_init(struct advk_pcie *pcie)
+static void advk_sw_pci_bridge_init(struct advk_pcie *pcie)
 {
 	struct pci_bridge_emul *bridge = &pcie->bridge;
 
@@ -527,7 +531,8 @@ static int advk_sw_pci_bridge_init(struct advk_pcie *pcie)
 	bridge->data = pcie;
 	bridge->ops = &advk_pci_bridge_emul_ops;
 
-	return pci_bridge_emul_init(bridge, 0);
+	pci_bridge_emul_init(bridge, 0);
+
 }
 
 static bool advk_pcie_valid_device(struct advk_pcie *pcie, struct pci_bus *bus,
@@ -1027,11 +1032,7 @@ static int advk_pcie_probe(struct platform_device *pdev)
 
 	advk_pcie_setup_hw(pcie);
 
-	ret = advk_sw_pci_bridge_init(pcie);
-	if (ret) {
-		dev_err(dev, "Failed to register emulated root PCI bridge\n");
-		return ret;
-	}
+	advk_sw_pci_bridge_init(pcie);
 
 	ret = advk_pcie_init_irq_domain(pcie);
 	if (ret) {

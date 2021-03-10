@@ -40,10 +40,12 @@
 #include <linux/ipv6.h>
 #include <linux/phy.h>
 #include <linux/platform_data/bcmgenet.h>
+#include <linux/ptp_clock_kernel.h>
 
 #include <asm/unaligned.h>
 
 #include "bcmgenet.h"
+
 
 /* Maximum number of hardware queues, downsized if needed */
 #define GENET_MAX_MQ_CNT	4
@@ -56,7 +58,7 @@
 #define GENET_Q16_TX_BD_CNT	\
 	(TOTAL_DESC - priv->hw_params->tx_queues * priv->hw_params->tx_bds_per_q)
 
-#define RX_BUF_LENGTH		2048
+#define RX_BUF_LENGTH		2240
 #define SKB_ALIGNMENT		32
 
 /* Tx/Rx DMA register offset, skip 256 descriptors */
@@ -69,11 +71,11 @@
 #define GENET_RDMA_REG_OFF	(priv->hw_params->rdma_offset + \
 				TOTAL_DESC * DMA_DESC_SIZE)
 
-/* Forward declarations */
-static void bcmgenet_set_rx_mode(struct net_device *dev);
 static bool skip_umac_reset = true;
 module_param(skip_umac_reset, bool, 0444);
 MODULE_PARM_DESC(skip_umac_reset, "Skip UMAC reset step");
+
+
 
 static inline void bcmgenet_writel(u32 value, void __iomem *offset)
 {
@@ -1133,6 +1135,7 @@ static const struct ethtool_ops bcmgenet_ethtool_ops = {
 	.get_link_ksettings	= bcmgenet_get_link_ksettings,
 	.set_link_ksettings	= bcmgenet_set_link_ksettings,
 	.get_ts_info		= ethtool_op_get_ts_info,
+
 };
 
 /* Power down the unimac, based on mode. */
@@ -1594,6 +1597,11 @@ static netdev_tx_t bcmgenet_xmit(struct sk_buff *skb, struct net_device *dev)
 		goto out;
 	}
 
+	if (skb_padto(skb, ETH_ZLEN)) {
+		ret = NETDEV_TX_OK;
+		goto out;
+	}
+
 	/* Retain how many bytes will be sent on the wire, without TSB inserted
 	 * by transmit checksum offload
 	 */
@@ -1642,9 +1650,6 @@ static netdev_tx_t bcmgenet_xmit(struct sk_buff *skb, struct net_device *dev)
 		len_stat = (size << DMA_BUFLENGTH_SHIFT) |
 			   (priv->hw_params->qtag_mask << DMA_TX_QTAG_SHIFT);
 
-		/* Note: if we ever change from DMA_TX_APPEND_CRC below we
-		 * will need to restore software padding of "runt" packets
-		 */
 		if (!i) {
 			len_stat |= DMA_TX_APPEND_CRC | DMA_SOP;
 			if (skb->ip_summed == CHECKSUM_PARTIAL)
@@ -2789,7 +2794,7 @@ static void bcmgenet_set_hw_addr(struct bcmgenet_priv *priv,
 }
 
 /* Returns a reusable dma control register value */
-static u32 bcmgenet_dma_disable(struct bcmgenet_priv *priv, bool flush_rx)
+static u32 bcmgenet_dma_disable(struct bcmgenet_priv *priv)
 {
 	u32 reg;
 	u32 dma_ctrl;
@@ -2807,14 +2812,6 @@ static u32 bcmgenet_dma_disable(struct bcmgenet_priv *priv, bool flush_rx)
 	bcmgenet_umac_writel(priv, 1, UMAC_TX_FLUSH);
 	udelay(10);
 	bcmgenet_umac_writel(priv, 0, UMAC_TX_FLUSH);
-
-	if (flush_rx) {
-	    reg = bcmgenet_rbuf_ctrl_get(priv);
-	    bcmgenet_rbuf_ctrl_set(priv, reg | BIT(0));
-	    udelay(10);
-	    bcmgenet_rbuf_ctrl_set(priv, reg);
-	    udelay(10);
-	}
 
 	return dma_ctrl;
 }
@@ -2869,7 +2866,6 @@ static void bcmgenet_netif_start(struct net_device *dev)
 	struct bcmgenet_priv *priv = netdev_priv(dev);
 
 	/* Start the network engine */
-	bcmgenet_set_rx_mode(dev);
 	bcmgenet_enable_rx_napi(priv);
 
 	umac_enable_set(priv, CMD_TX_EN | CMD_RX_EN, true);
@@ -2917,8 +2913,8 @@ static int bcmgenet_open(struct net_device *dev)
 		bcmgenet_ext_writel(priv, reg, EXT_EXT_PWR_MGMT);
 	}
 
-	/* Disable RX/TX DMA and flush TX and RX queues */
-	dma_ctrl = bcmgenet_dma_disable(priv, true);
+	/* Disable RX/TX DMA and flush TX queues */
+	dma_ctrl = bcmgenet_dma_disable(priv);
 
 	/* Reinitialize TDMA and RDMA and SW housekeeping */
 	ret = bcmgenet_init_dma(priv);
@@ -3536,6 +3532,7 @@ static int bcmgenet_probe(struct platform_device *pdev)
 
 	priv->dev = dev;
 	priv->pdev = pdev;
+	
 	if (of_id)
 		priv->version = (enum bcmgenet_version)of_id->data;
 	else
@@ -3582,6 +3579,7 @@ static int bcmgenet_probe(struct platform_device *pdev)
 	if (err)
 		goto err_clk_disable;
 
+  
 	/* setup number of real queues  + 1 (GENET_V1 has 0 hardware queues
 	 * just the ring 16 descriptor based TX
 	 */
@@ -3618,7 +3616,7 @@ err:
 static int bcmgenet_remove(struct platform_device *pdev)
 {
 	struct bcmgenet_priv *priv = dev_to_priv(&pdev->dev);
-
+	
 	dev_set_drvdata(&pdev->dev, NULL);
 	unregister_netdev(priv->dev);
 	bcmgenet_mii_exit(priv->dev);
@@ -3676,7 +3674,7 @@ static int bcmgenet_resume(struct device *d)
 		bcmgenet_power_up(priv, GENET_POWER_WOL_MAGIC);
 
 	/* Disable RX/TX DMA and flush TX queues */
-	dma_ctrl = bcmgenet_dma_disable(priv, false);
+	dma_ctrl = bcmgenet_dma_disable(priv);
 
 	/* Reinitialize TDMA and RDMA and SW housekeeping */
 	ret = bcmgenet_init_dma(priv);

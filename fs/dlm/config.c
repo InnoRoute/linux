@@ -216,7 +216,6 @@ struct dlm_space {
 	struct list_head members;
 	struct mutex members_lock;
 	int members_count;
-	struct dlm_nodes *nds;
 };
 
 struct dlm_comms {
@@ -425,7 +424,6 @@ static struct config_group *make_space(struct config_group *g, const char *name)
 	INIT_LIST_HEAD(&sp->members);
 	mutex_init(&sp->members_lock);
 	sp->members_count = 0;
-	sp->nds = nds;
 	return &sp->group;
 
  fail:
@@ -447,7 +445,6 @@ static void drop_space(struct config_group *g, struct config_item *i)
 static void release_space(struct config_item *i)
 {
 	struct dlm_space *sp = config_item_to_space(i);
-	kfree(sp->nds);
 	kfree(sp);
 }
 

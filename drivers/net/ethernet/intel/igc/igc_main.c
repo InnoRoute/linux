@@ -2222,23 +2222,21 @@ static int igc_change_mtu(struct net_device *netdev, int new_mtu)
 }
 
 /**
- * igc_get_stats64 - Get System Network Statistics
+ * igc_get_stats - Get System Network Statistics
  * @netdev: network interface device structure
- * @stats: rtnl_link_stats64 pointer
  *
  * Returns the address of the device statistics structure.
  * The statistics are updated here and also from the timer callback.
  */
-static void igc_get_stats64(struct net_device *netdev,
-			    struct rtnl_link_stats64 *stats)
+static struct net_device_stats *igc_get_stats(struct net_device *netdev)
 {
 	struct igc_adapter *adapter = netdev_priv(netdev);
 
-	spin_lock(&adapter->stats64_lock);
 	if (!test_bit(__IGC_RESETTING, &adapter->state))
 		igc_update_stats(adapter);
-	memcpy(stats, &adapter->stats64, sizeof(*stats));
-	spin_unlock(&adapter->stats64_lock);
+
+	/* only return the current stats */
+	return &netdev->stats;
 }
 
 static netdev_features_t igc_fix_features(struct net_device *netdev,
@@ -3986,7 +3984,7 @@ static const struct net_device_ops igc_netdev_ops = {
 	.ndo_start_xmit		= igc_xmit_frame,
 	.ndo_set_mac_address	= igc_set_mac,
 	.ndo_change_mtu		= igc_change_mtu,
-	.ndo_get_stats64	= igc_get_stats64,
+	.ndo_get_stats		= igc_get_stats,
 	.ndo_fix_features	= igc_fix_features,
 	.ndo_set_features	= igc_set_features,
 	.ndo_features_check	= igc_features_check,

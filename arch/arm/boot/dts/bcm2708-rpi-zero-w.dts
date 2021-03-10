@@ -4,14 +4,13 @@
 #include "bcm2708-rpi.dtsi"
 #include "bcm283x-rpi-csi1-2lane.dtsi"
 #include "bcm283x-rpi-i2c0mux_0_28.dtsi"
-#include "bcm2708-rpi-bt.dtsi"
 
 / {
 	compatible = "raspberrypi,model-zero-w", "brcm,bcm2835";
 	model = "Raspberry Pi Zero W";
 
 	chosen {
-		bootargs = "coherent_pool=1M 8250.nr_uarts=1 snd_bcm2835.enable_compat_alsa=0 snd_bcm2835.enable_hdmi=1";
+		bootargs = "coherent_pool=1M 8250.nr_uarts=1 snd_bcm2835.enable_compat_alsa=0 snd_bcm2835.enable_hdmi=1 snd_bcm2835.enable_headphones=1";
 	};
 
 	aliases {
@@ -122,6 +121,10 @@
 	clock-frequency = <100000>;
 };
 
+&i2c0mux {
+	pinctrl-0 = <&i2c0_pins>;
+};
+
 &i2c1 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c1_pins>;
@@ -140,8 +143,8 @@
 &leds {
 	act_led: act {
 		label = "led0";
-		linux,default-trigger = "actpwr";
-		gpios = <&gpio 47 GPIO_ACTIVE_LOW>;
+		linux,default-trigger = "mmc0";
+		gpios = <&gpio 47 0>;
 	};
 };
 
@@ -152,7 +155,6 @@
 &audio {
 	pinctrl-names = "default";
 	pinctrl-0 = <&audio_pins>;
-	brcm,disable-headphones = <1>;
 };
 
 / {

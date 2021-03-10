@@ -110,18 +110,24 @@
 		};
 	};
 	fragment@17 {
+		target = <&hdmi0>;
+		__dormant__ {
+			dmas;
+		};
+	};
+	fragment@18 {
+		target = <&hdmi1>;
+		__dormant__ {
+			dmas;
+		};
+	};
+	fragment@19 {
 		target = <&audio>;
 		__overlay__ {
 			brcm,disable-hdmi;
 		};
 	};
-	fragment@18 {
-		target = <&dvp>;
-		__overlay__ {
-			status = "okay";
-		};
-	};
-	fragment@19 {
+	fragment@20 {
 		target = <&usb>;
 		#address-cells = <1>;
 		#size-cells = <1>;

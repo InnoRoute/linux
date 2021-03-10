@@ -907,11 +907,15 @@ static void program_timing_sync(
 
 		/* set first pipe with plane as master */
 		for (j = 0; j < group_size; j++) {
+			struct pipe_ctx *temp;
+
 			if (pipe_set[j]->plane_state) {
 				if (j == 0)
 					break;
 
-				swap(pipe_set[0], pipe_set[j]);
+				temp = pipe_set[0];
+				pipe_set[0] = pipe_set[j];
+				pipe_set[j] = temp;
 				break;
 			}
 		}
@@ -2225,14 +2229,6 @@ void dc_commit_updates_for_stream(struct dc *dc,
 	}
 
 	copy_stream_update_to_stream(dc, context, stream, stream_update);
-
-	if (update_type > UPDATE_TYPE_FAST) {
-		if (!dc->res_pool->funcs->validate_bandwidth(dc, context, false)) {
-			DC_ERROR("Mode validation failed for stream update!\n");
-			dc_release_state(context);
-			return;
-		}
-	}
 
 	commit_planes_for_stream(
 				dc,

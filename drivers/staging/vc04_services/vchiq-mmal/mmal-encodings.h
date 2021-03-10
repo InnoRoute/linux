@@ -90,24 +90,11 @@
 #define MMAL_ENCODING_BAYER_SGBRG12P   MMAL_FOURCC('p', 'G', '1', '2')
 #define MMAL_ENCODING_BAYER_SRGGB12P   MMAL_FOURCC('p', 'R', '1', '2')
 
-//14 bit per pixel Bayer formats.
-#define MMAL_ENCODING_BAYER_SBGGR14P   MMAL_FOURCC('p', 'B', 'E', 'E')
-#define MMAL_ENCODING_BAYER_SGBRG14P   MMAL_FOURCC('p', 'G', 'E', 'E')
-#define MMAL_ENCODING_BAYER_SGRBG14P   MMAL_FOURCC('p', 'g', 'E', 'E')
-#define MMAL_ENCODING_BAYER_SRGGB14P   MMAL_FOURCC('p', 'R', 'E', 'E')
-
 /* 16 bit per pixel Bayer formats. */
 #define MMAL_ENCODING_BAYER_SBGGR16    MMAL_FOURCC('B', 'G', '1', '6')
 #define MMAL_ENCODING_BAYER_SGBRG16    MMAL_FOURCC('G', 'B', '1', '6')
 #define MMAL_ENCODING_BAYER_SGRBG16    MMAL_FOURCC('G', 'R', '1', '6')
 #define MMAL_ENCODING_BAYER_SRGGB16    MMAL_FOURCC('R', 'G', '1', '6')
-
-/* MIPI packed monochrome images */
-#define MMAL_ENCODING_GREY    MMAL_FOURCC('G', 'R', 'E', 'Y')
-#define MMAL_ENCODING_Y10P    MMAL_FOURCC('Y', '1', '0', 'P')
-#define MMAL_ENCODING_Y12P    MMAL_FOURCC('Y', '1', '2', 'P')
-#define MMAL_ENCODING_Y14P    MMAL_FOURCC('Y', '1', '4', 'P')
-#define MMAL_ENCODING_Y16     MMAL_FOURCC('Y', '1', '6', ' ')
 
 /** An EGL image handle
  */

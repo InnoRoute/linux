@@ -351,7 +351,7 @@ static void process_interval(void)
 	}
 
 	init_stats(&walltime_nsecs_stats);
-	update_stats(&walltime_nsecs_stats, stat_config.interval * 1000000ULL);
+	update_stats(&walltime_nsecs_stats, stat_config.interval * 1000000);
 	print_counters(&rs, 0, NULL);
 }
 
@@ -1671,10 +1671,8 @@ static void setup_system_wide(int forks)
 		struct evsel *counter;
 
 		evlist__for_each_entry(evsel_list, counter) {
-			if (!counter->core.system_wide &&
-			    strcmp(counter->name, "duration_time")) {
+			if (!counter->core.system_wide)
 				return;
-			}
 		}
 
 		if (evsel_list->core.nr_entries)

@@ -33,8 +33,10 @@ static int session_write_header(char *path)
 {
 	struct perf_session *session;
 	struct perf_data data = {
-		.path = path,
-		.mode = PERF_DATA_MODE_WRITE,
+		.file      = {
+			.path = path,
+		},
+		.mode      = PERF_DATA_MODE_WRITE,
 	};
 
 	session = perf_session__new(&data, false, NULL);
@@ -61,8 +63,10 @@ static int check_cpu_topology(char *path, struct perf_cpu_map *map)
 {
 	struct perf_session *session;
 	struct perf_data data = {
-		.path = path,
-		.mode = PERF_DATA_MODE_READ,
+		.file      = {
+			.path = path,
+		},
+		.mode      = PERF_DATA_MODE_READ,
 	};
 	int i;
 

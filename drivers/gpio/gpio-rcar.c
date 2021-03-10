@@ -250,10 +250,8 @@ static int gpio_rcar_request(struct gpio_chip *chip, unsigned offset)
 	int error;
 
 	error = pm_runtime_get_sync(p->dev);
-	if (error < 0) {
-		pm_runtime_put(p->dev);
+	if (error < 0)
 		return error;
-	}
 
 	error = pinctrl_gpio_request(chip->base + offset);
 	if (error)

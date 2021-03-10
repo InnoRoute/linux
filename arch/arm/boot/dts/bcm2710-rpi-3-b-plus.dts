@@ -5,14 +5,13 @@
 #include "bcm283x-rpi-lan7515.dtsi"
 #include "bcm283x-rpi-csi1-2lane.dtsi"
 #include "bcm283x-rpi-i2c0mux_0_44.dtsi"
-#include "bcm271x-rpi-bt.dtsi"
 
 / {
 	compatible = "raspberrypi,3-model-b-plus", "brcm,bcm2837";
 	model = "Raspberry Pi 3 Model B+";
 
 	chosen {
-		bootargs = "coherent_pool=1M 8250.nr_uarts=1 snd_bcm2835.enable_compat_alsa=0 snd_bcm2835.enable_hdmi=1";
+		bootargs = "coherent_pool=1M 8250.nr_uarts=1 snd_bcm2835.enable_compat_alsa=0 snd_bcm2835.enable_hdmi=1 snd_bcm2835.enable_headphones=1";
 	};
 
 	aliases {
@@ -130,6 +129,10 @@
 
 &i2c0if {
 	clock-frequency = <100000>;
+};
+
+&i2c0mux {
+	pinctrl-0 = <&i2c0_pins>;
 };
 
 &i2c1 {

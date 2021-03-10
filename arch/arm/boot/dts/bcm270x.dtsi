@@ -3,8 +3,14 @@
 
 / {
 	chosen {
-		bootargs = "coherent_pool=1M snd_bcm2835.enable_compat_alsa=0 snd_bcm2835.enable_hdmi=1";
+		bootargs = "coherent_pool=1M snd_bcm2835.enable_compat_alsa=0 snd_bcm2835.enable_hdmi=1 snd_bcm2835.enable_headphones=1";
 		/delete-property/ stdout-path;
+	};
+
+	firmware_clocks: firmware-clocks {
+		compatible = "raspberrypi,firmware-clocks";
+		raspberrypi,firmware = <&firmware>;
+		#clock-cells = <1>;
 	};
 
 	soc: soc {
@@ -88,9 +94,8 @@
 			reg = <0x7e800000 0x800>,
 			      <0x7e802000 0x4>;
 			interrupts = <2 6>;
-			clocks = <&clocks BCM2835_CLOCK_CAM0>,
-				 <&firmware_clocks 4>;
-			clock-names = "lp", "vpu";
+			clocks = <&clocks BCM2835_CLOCK_CAM0>;
+			clock-names = "lp";
 			power-domains = <&power RPI_POWER_DOMAIN_UNICAM0>;
 			#address-cells = <1>;
 			#size-cells = <0>;
@@ -103,9 +108,8 @@
 			reg = <0x7e801000 0x800>,
 			      <0x7e802004 0x4>;
 			interrupts = <2 7>;
-			clocks = <&clocks BCM2835_CLOCK_CAM1>,
-				 <&firmware_clocks 4>;
-			clock-names = "lp", "vpu";
+			clocks = <&clocks BCM2835_CLOCK_CAM1>;
+			clock-names = "lp";
 			power-domains = <&power RPI_POWER_DOMAIN_UNICAM1>;
 			#address-cells = <1>;
 			#size-cells = <0>;

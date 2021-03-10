@@ -576,9 +576,8 @@ static int check_matrix_bitmap(unsigned char *bmap,
  * if failed, give up and free the control instance.
  */
 
-int snd_usb_mixer_add_list(struct usb_mixer_elem_list *list,
-			   struct snd_kcontrol *kctl,
-			   bool is_std_info)
+int snd_usb_mixer_add_control(struct usb_mixer_elem_list *list,
+			      struct snd_kcontrol *kctl)
 {
 	struct usb_mixer_interface *mixer = list->mixer;
 	int err;
@@ -592,7 +591,6 @@ int snd_usb_mixer_add_list(struct usb_mixer_elem_list *list,
 		return err;
 	}
 	list->kctl = kctl;
-	list->is_std_info = is_std_info;
 	list->next_id_elem = mixer->id_elems[list->id];
 	mixer->id_elems[list->id] = list;
 	return 0;
@@ -1683,16 +1681,6 @@ static void __build_feature_ctl(struct usb_mixer_interface *mixer,
 
 	/* get min/max values */
 	get_min_max_with_quirks(cval, 0, kctl);
-
-	/* skip a bogus volume range */
-	if (cval->max <= cval->min) {
-		usb_audio_dbg(mixer->chip,
-			      "[%d] FU [%s] skipped due to invalid volume\n",
-			      cval->head.id, kctl->id.name);
-		snd_ctl_free_one(kctl);
-		return;
-	}
-
 
 	if (control == UAC_FU_VOLUME) {
 		check_mapped_dB(map, cval);
@@ -3225,11 +3213,8 @@ void snd_usb_mixer_notify_id(struct usb_mixer_interface *mixer, int unitid)
 	unitid = delegate_notify(mixer, unitid, NULL, NULL);
 
 	for_each_mixer_elem(list, mixer, unitid) {
-		struct usb_mixer_elem_info *info;
-
-		if (!list->is_std_info)
-			continue;
-		info = mixer_elem_list_to_info(list);
+		struct usb_mixer_elem_info *info =
+			mixer_elem_list_to_info(list);
 		/* invalidate cache, so the value is read from the device */
 		info->cached = 0;
 		snd_ctl_notify(mixer->chip->card, SNDRV_CTL_EVENT_MASK_VALUE,
@@ -3308,8 +3293,6 @@ static void snd_usb_mixer_interrupt_v2(struct usb_mixer_interface *mixer,
 		struct usb_mixer_elem_info *info;
 
 		if (!list->kctl)
-			continue;
-		if (!list->is_std_info)
 			continue;
 
 		info = mixer_elem_list_to_info(list);

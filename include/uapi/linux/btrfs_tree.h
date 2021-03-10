@@ -4,11 +4,6 @@
 
 #include <linux/btrfs.h>
 #include <linux/types.h>
-#ifdef __KERNEL__
-#include <linux/stddef.h>
-#else
-#include <stddef.h>
-#endif
 
 /*
  * This header contains the structure definitions and constants used
@@ -654,15 +649,6 @@ struct btrfs_root_item {
 	struct btrfs_timespec rtime;
 	__le64 reserved[8]; /* for future */
 } __attribute__ ((__packed__));
-
-/*
- * Btrfs root item used to be smaller than current size.  The old format ends
- * at where member generation_v2 is.
- */
-static inline __u32 btrfs_legacy_root_item_size(void)
-{
-	return offsetof(struct btrfs_root_item, generation_v2);
-}
 
 /*
  * this is used for both forward and backward root refs

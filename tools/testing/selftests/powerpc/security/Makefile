@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0+
 
-TEST_GEN_PROGS := rfi_flush entry_flush
+TEST_GEN_PROGS := rfi_flush
 top_srcdir = ../../../../..
 
 CFLAGS += -I../../../../../usr/include

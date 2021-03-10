@@ -974,8 +974,6 @@ static void intel_pt_set_pid_tid_cpu(struct intel_pt *pt,
 
 	if (queue->tid == -1 || pt->have_sched_switch) {
 		ptq->tid = machine__get_current_tid(pt->machine, ptq->cpu);
-		if (ptq->tid == -1)
-			ptq->pid = -1;
 		thread__zput(ptq->thread);
 	}
 
@@ -1709,7 +1707,6 @@ static int intel_pt_synth_pebs_sample(struct intel_pt_queue *ptq)
 	u64 sample_type = evsel->core.attr.sample_type;
 	u64 id = evsel->core.id[0];
 	u8 cpumode;
-	u64 regs[8 * sizeof(sample.intr_regs.mask)];
 
 	if (intel_pt_skip_event(pt))
 		return 0;
@@ -1759,8 +1756,8 @@ static int intel_pt_synth_pebs_sample(struct intel_pt_queue *ptq)
 	}
 
 	if (sample_type & PERF_SAMPLE_REGS_INTR &&
-	    (items->mask[INTEL_PT_GP_REGS_POS] ||
-	     items->mask[INTEL_PT_XMM_POS])) {
+	    items->mask[INTEL_PT_GP_REGS_POS]) {
+		u64 regs[sizeof(sample.intr_regs.mask)];
 		u64 regs_mask = evsel->core.attr.sample_regs_intr;
 		u64 *pos;
 
@@ -2490,8 +2487,10 @@ static int intel_pt_context_switch(struct intel_pt *pt, union perf_event *event,
 		tid = sample->tid;
 	}
 
-	if (tid == -1)
-		intel_pt_log("context_switch event has no tid\n");
+	if (tid == -1) {
+		pr_err("context_switch event has no tid\n");
+		return -EINVAL;
+	}
 
 	intel_pt_log("context_switch: cpu %d pid %d tid %d time %"PRIu64" tsc %#"PRIx64"\n",
 		     cpu, pid, tid, sample->time, perf_time_to_tsc(sample->time,

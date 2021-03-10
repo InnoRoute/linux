@@ -27,8 +27,6 @@
 				VDIG-supply = <&imx477_vdig>;	/* 1.05v */
 				VDDL-supply = <&imx477_vddl>;	/* 1.8v */
 
-				rotation = <180>;
-
 				port {
 					imx477_0: endpoint {
 						remote-endpoint = <&csi1_ep>;
@@ -51,9 +49,6 @@
 			port {
 				csi1_ep: endpoint {
 					remote-endpoint = <&imx477_0>;
-					clock-lanes = <0>;
-					data-lanes = <1 2>;
-					clock-noncontinuous;
 				};
 			};
 		};
@@ -111,9 +106,5 @@
 			cam0-pwdn-ctrl = <&imx477_vana>,"gpio:0";
 			cam0-pwdn      = <&imx477_vana>,"gpio:4";
 		};
-	};
-
-	__overrides__ {
-		rotation = <&imx477>,"rotation:0";
 	};
 };

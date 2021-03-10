@@ -76,8 +76,6 @@
 			   ARM_SMCCC_SMC_32,				\
 			   0, 0x7fff)
 
-#define SMCCC_ARCH_WORKAROUND_RET_UNAFFECTED	1
-
 #ifndef __ASSEMBLY__
 
 #include <linux/linkage.h>

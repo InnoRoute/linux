@@ -1173,16 +1173,63 @@ static void bcm2835_spi_handle_err(struct spi_controller *ctlr,
 	bcm2835_spi_reset_hw(ctlr);
 }
 
-static int chip_match_name(struct gpio_chip *chip, void *data)
+static void bcm2835_spi_set_cs(struct spi_device *spi, bool gpio_level)
 {
-	return !strcmp(chip->label, data);
+	/*
+	 * we can assume that we are "native" as per spi_set_cs
+	 *   calling us ONLY when cs_gpio is not set
+	 * we can also assume that we are CS < 3 as per bcm2835_spi_setup
+	 *   we would not get called because of error handling there.
+	 * the level passed is the electrical level not enabled/disabled
+	 *   so it has to get translated back to enable/disable
+	 *   see spi_set_cs in spi.c for the implementation
+	 */
+
+	struct spi_master *master = spi->master;
+	struct bcm2835_spi *bs = spi_master_get_devdata(master);
+	u32 cs = bcm2835_rd(bs, BCM2835_SPI_CS);
+	bool enable;
+
+	/* calculate the enable flag from the passed gpio_level */
+	enable = (spi->mode & SPI_CS_HIGH) ? gpio_level : !gpio_level;
+
+	/* set flags for "reverse" polarity in the registers */
+	if (spi->mode & SPI_CS_HIGH) {
+		/* set the correct CS-bits */
+		cs |= BCM2835_SPI_CS_CSPOL;
+		cs |= BCM2835_SPI_CS_CSPOL0 << spi->chip_select;
+	} else {
+		/* clean the CS-bits */
+		cs &= ~BCM2835_SPI_CS_CSPOL;
+		cs &= ~(BCM2835_SPI_CS_CSPOL0 << spi->chip_select);
+	}
+
+	/* select the correct chip_select depending on disabled/enabled */
+	if (enable) {
+		/* set cs correctly */
+		if (spi->mode & SPI_NO_CS) {
+			/* use the "undefined" chip-select */
+			cs |= BCM2835_SPI_CS_CS_10 | BCM2835_SPI_CS_CS_01;
+		} else {
+			/* set the chip select */
+			cs &= ~(BCM2835_SPI_CS_CS_10 | BCM2835_SPI_CS_CS_01);
+			cs |= spi->chip_select;
+		}
+	} else {
+		/* disable CSPOL which puts HW-CS into deselected state */
+		cs &= ~BCM2835_SPI_CS_CSPOL;
+		/* use the "undefined" chip-select as precaution */
+		cs |= BCM2835_SPI_CS_CS_10 | BCM2835_SPI_CS_CS_01;
+	}
+
+	/* finally set the calculated flags in SPI_CS */
+	bcm2835_wr(bs, BCM2835_SPI_CS, cs);
 }
 
 static int bcm2835_spi_setup(struct spi_device *spi)
 {
 	struct spi_controller *ctlr = spi->controller;
 	struct bcm2835_spi *bs = spi_controller_get_devdata(ctlr);
-	struct gpio_chip *chip;
 	u32 cs;
 
 	/*
@@ -1234,31 +1281,6 @@ static int bcm2835_spi_setup(struct spi_device *spi)
 		return -EINVAL;
 	}
 
-	/*
-	 * Translate native CS to GPIO
-	 *
-	 * FIXME: poking around in the gpiolib internals like this is
-	 * not very good practice. Find a way to locate the real problem
-	 * and fix it. Why is the GPIO descriptor in spi->cs_gpiod
-	 * sometimes not assigned correctly? Erroneous device trees?
-	 */
-
-	/* get the gpio chip for the base */
-	chip = gpiochip_find("pinctrl-bcm2835", chip_match_name);
-	if (!chip)
-		return 0;
-
-	spi->cs_gpiod = gpiochip_request_own_desc(chip, 8 - spi->chip_select,
-						  DRV_NAME,
-						  GPIO_LOOKUP_FLAGS_DEFAULT,
-						  GPIOD_OUT_LOW);
-	if (IS_ERR(spi->cs_gpiod))
-		return PTR_ERR(spi->cs_gpiod);
-
-	/* and set up the "mode" and level */
-	dev_info(&spi->dev, "setting up native-CS%i to use GPIO\n",
-		 spi->chip_select);
-
 	return 0;
 }
 
@@ -1268,7 +1290,7 @@ static int bcm2835_spi_probe(struct platform_device *pdev)
 	struct bcm2835_spi *bs;
 	int err;
 
-	ctlr = devm_spi_alloc_master(&pdev->dev, ALIGN(sizeof(*bs),
+	ctlr = spi_alloc_master(&pdev->dev, ALIGN(sizeof(*bs),
 						  dma_get_cache_alignment()));
 	if (!ctlr)
 		return -ENOMEM;
@@ -1280,6 +1302,7 @@ static int bcm2835_spi_probe(struct platform_device *pdev)
 	ctlr->bits_per_word_mask = SPI_BPW_MASK(8);
 	ctlr->num_chipselect = BCM2835_SPI_NUM_CS;
 	ctlr->setup = bcm2835_spi_setup;
+	ctlr->set_cs = bcm2835_spi_set_cs;
 	ctlr->transfer_one = bcm2835_spi_transfer_one;
 	ctlr->handle_err = bcm2835_spi_handle_err;
 	ctlr->prepare_message = bcm2835_spi_prepare_message;
@@ -1288,19 +1311,23 @@ static int bcm2835_spi_probe(struct platform_device *pdev)
 	bs = spi_controller_get_devdata(ctlr);
 
 	bs->regs = devm_platform_ioremap_resource(pdev, 0);
-	if (IS_ERR(bs->regs))
-		return PTR_ERR(bs->regs);
+	if (IS_ERR(bs->regs)) {
+		err = PTR_ERR(bs->regs);
+		goto out_controller_put;
+	}
 
 	bs->clk = devm_clk_get(&pdev->dev, NULL);
 	if (IS_ERR(bs->clk)) {
 		err = PTR_ERR(bs->clk);
 		dev_err(&pdev->dev, "could not get clk: %d\n", err);
-		return err;
+		goto out_controller_put;
 	}
 
 	bs->irq = platform_get_irq(pdev, 0);
-	if (bs->irq <= 0)
-		return bs->irq ? bs->irq : -ENODEV;
+	if (bs->irq <= 0) {
+		err = bs->irq ? bs->irq : -ENODEV;
+		goto out_controller_put;
+	}
 
 	clk_prepare_enable(bs->clk);
 
@@ -1315,23 +1342,24 @@ static int bcm2835_spi_probe(struct platform_device *pdev)
 			       dev_name(&pdev->dev), ctlr);
 	if (err) {
 		dev_err(&pdev->dev, "could not request IRQ: %d\n", err);
-		goto out_dma_release;
+		goto out_clk_disable;
 	}
 
-	err = spi_register_controller(ctlr);
+	err = devm_spi_register_controller(&pdev->dev, ctlr);
 	if (err) {
 		dev_err(&pdev->dev, "could not register SPI controller: %d\n",
 			err);
-		goto out_dma_release;
+		goto out_clk_disable;
 	}
 
 	bcm2835_debugfs_create(bs, dev_name(&pdev->dev));
 
 	return 0;
 
-out_dma_release:
-	bcm2835_dma_release(ctlr, bs);
+out_clk_disable:
 	clk_disable_unprepare(bs->clk);
+out_controller_put:
+	spi_controller_put(ctlr);
 	return err;
 }
 
@@ -1341,8 +1369,6 @@ static int bcm2835_spi_remove(struct platform_device *pdev)
 	struct bcm2835_spi *bs = spi_controller_get_devdata(ctlr);
 
 	bcm2835_debugfs_remove(bs);
-
-	spi_unregister_controller(ctlr);
 
 	/* Clear FIFOs, and disable the HW block */
 	bcm2835_wr(bs, BCM2835_SPI_CS,

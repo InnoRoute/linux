@@ -1970,8 +1970,7 @@ static int sfp_probe(struct platform_device *pdev)
 			continue;
 
 		sfp->gpio_irq[i] = gpiod_to_irq(sfp->gpio[i]);
-		if (sfp->gpio_irq[i] < 0) {
-			sfp->gpio_irq[i] = 0;
+		if (!sfp->gpio_irq[i]) {
 			poll = true;
 			continue;
 		}

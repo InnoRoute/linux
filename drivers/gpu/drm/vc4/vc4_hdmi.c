@@ -43,12 +43,10 @@
 #include <linux/pm_runtime.h>
 #include <linux/rational.h>
 #include <linux/reset.h>
-#include <sound/asoundef.h>
 #include <sound/dmaengine_pcm.h>
 #include <sound/pcm_drm_eld.h>
 #include <sound/pcm_params.h>
 #include <sound/soc.h>
-#include <sound/tlv.h>
 #include "media/cec.h"
 #include "vc4_drv.h"
 #include "vc4_hdmi.h"
@@ -82,311 +80,6 @@
 
 #define CEC_CLOCK_FREQ 40000
 #define VC4_HSM_CLOCK 163682864
-
-#define HDMI_CODEC_CHMAP_IDX_UNKNOWN  -1
-
-/*
- * CEA speaker placement for HDMI 1.4:
- *
- *  FL  FLC   FC   FRC   FR   FRW
- *
- *                                  LFE
- *
- *  RL  RLC   RC   RRC   RR
- *
- *  Speaker placement has to be extended to support HDMI 2.0
- */
-enum hdmi_codec_cea_spk_placement {
-	FL  = BIT(0),	/* Front Left           */
-	FC  = BIT(1),	/* Front Center         */
-	FR  = BIT(2),	/* Front Right          */
-	FLC = BIT(3),	/* Front Left Center    */
-	FRC = BIT(4),	/* Front Right Center   */
-	RL  = BIT(5),	/* Rear Left            */
-	RC  = BIT(6),	/* Rear Center          */
-	RR  = BIT(7),	/* Rear Right           */
-	RLC = BIT(8),	/* Rear Left Center     */
-	RRC = BIT(9),	/* Rear Right Center    */
-	LFE = BIT(10),	/* Low Frequency Effect */
-};
-
-/*
- * cea Speaker allocation structure
- */
-struct hdmi_codec_cea_spk_alloc {
-	const int ca_id;
-	unsigned int n_ch;
-	unsigned long mask;
-};
-
-/* Channel maps  stereo HDMI */
-static const struct snd_pcm_chmap_elem hdmi_codec_stereo_chmaps[] = {
-	{ .channels = 2,
-	  .map = { SNDRV_CHMAP_FL, SNDRV_CHMAP_FR } },
-	{ }
-};
-
-/* Channel maps for multi-channel playbacks, up to 8 n_ch */
-static const struct snd_pcm_chmap_elem hdmi_codec_8ch_chmaps[] = {
-	{ .channels = 2, /* CA_ID 0x00 */
-	  .map = { SNDRV_CHMAP_FL, SNDRV_CHMAP_FR } },
-	{ .channels = 4, /* CA_ID 0x01 */
-	  .map = { SNDRV_CHMAP_FL, SNDRV_CHMAP_FR, SNDRV_CHMAP_LFE,
-		   SNDRV_CHMAP_NA } },
-	{ .channels = 4, /* CA_ID 0x02 */
-	  .map = { SNDRV_CHMAP_FL, SNDRV_CHMAP_FR, SNDRV_CHMAP_NA,
-		   SNDRV_CHMAP_FC } },
-	{ .channels = 4, /* CA_ID 0x03 */
-	  .map = { SNDRV_CHMAP_FL, SNDRV_CHMAP_FR, SNDRV_CHMAP_LFE,
-		   SNDRV_CHMAP_FC } },
-	{ .channels = 6, /* CA_ID 0x04 */
-	  .map = { SNDRV_CHMAP_FL, SNDRV_CHMAP_FR, SNDRV_CHMAP_NA,
-		   SNDRV_CHMAP_NA, SNDRV_CHMAP_RC, SNDRV_CHMAP_NA } },
-	{ .channels = 6, /* CA_ID 0x05 */
-	  .map = { SNDRV_CHMAP_FL, SNDRV_CHMAP_FR, SNDRV_CHMAP_LFE,
-		   SNDRV_CHMAP_NA, SNDRV_CHMAP_RC, SNDRV_CHMAP_NA } },
-	{ .channels = 6, /* CA_ID 0x06 */
-	  .map = { SNDRV_CHMAP_FL, SNDRV_CHMAP_FR, SNDRV_CHMAP_NA,
-		   SNDRV_CHMAP_FC, SNDRV_CHMAP_RC, SNDRV_CHMAP_NA } },
-	{ .channels = 6, /* CA_ID 0x07 */
-	  .map = { SNDRV_CHMAP_FL, SNDRV_CHMAP_FR, SNDRV_CHMAP_LFE,
-		   SNDRV_CHMAP_FC, SNDRV_CHMAP_RC, SNDRV_CHMAP_NA } },
-	{ .channels = 6, /* CA_ID 0x08 */
-	  .map = { SNDRV_CHMAP_FL, SNDRV_CHMAP_FR, SNDRV_CHMAP_NA,
-		   SNDRV_CHMAP_NA, SNDRV_CHMAP_RL, SNDRV_CHMAP_RR } },
-	{ .channels = 6, /* CA_ID 0x09 */
-	  .map = { SNDRV_CHMAP_FL, SNDRV_CHMAP_FR, SNDRV_CHMAP_LFE,
-		   SNDRV_CHMAP_NA, SNDRV_CHMAP_RL, SNDRV_CHMAP_RR } },
-	{ .channels = 6, /* CA_ID 0x0A */
-	  .map = { SNDRV_CHMAP_FL, SNDRV_CHMAP_FR, SNDRV_CHMAP_NA,
-		   SNDRV_CHMAP_FC, SNDRV_CHMAP_RL, SNDRV_CHMAP_RR } },
-	{ .channels = 6, /* CA_ID 0x0B */
-	  .map = { SNDRV_CHMAP_FL, SNDRV_CHMAP_FR, SNDRV_CHMAP_LFE,
-		   SNDRV_CHMAP_FC, SNDRV_CHMAP_RL, SNDRV_CHMAP_RR } },
-	{ .channels = 8, /* CA_ID 0x0C */
-	  .map = { SNDRV_CHMAP_FL, SNDRV_CHMAP_FR, SNDRV_CHMAP_NA,
-		   SNDRV_CHMAP_NA, SNDRV_CHMAP_RL, SNDRV_CHMAP_RR,
-		   SNDRV_CHMAP_RC, SNDRV_CHMAP_NA } },
-	{ .channels = 8, /* CA_ID 0x0D */
-	  .map = { SNDRV_CHMAP_FL, SNDRV_CHMAP_FR, SNDRV_CHMAP_LFE,
-		   SNDRV_CHMAP_NA, SNDRV_CHMAP_RL, SNDRV_CHMAP_RR,
-		   SNDRV_CHMAP_RC, SNDRV_CHMAP_NA } },
-	{ .channels = 8, /* CA_ID 0x0E */
-	  .map = { SNDRV_CHMAP_FL, SNDRV_CHMAP_FR, SNDRV_CHMAP_NA,
-		   SNDRV_CHMAP_FC, SNDRV_CHMAP_RL, SNDRV_CHMAP_RR,
-		   SNDRV_CHMAP_RC, SNDRV_CHMAP_NA } },
-	{ .channels = 8, /* CA_ID 0x0F */
-	  .map = { SNDRV_CHMAP_FL, SNDRV_CHMAP_FR, SNDRV_CHMAP_LFE,
-		   SNDRV_CHMAP_FC, SNDRV_CHMAP_RL, SNDRV_CHMAP_RR,
-		   SNDRV_CHMAP_RC, SNDRV_CHMAP_NA } },
-	{ .channels = 8, /* CA_ID 0x10 */
-	  .map = { SNDRV_CHMAP_FL, SNDRV_CHMAP_FR, SNDRV_CHMAP_NA,
-		   SNDRV_CHMAP_NA, SNDRV_CHMAP_RL, SNDRV_CHMAP_RR,
-		   SNDRV_CHMAP_RLC, SNDRV_CHMAP_RRC } },
-	{ .channels = 8, /* CA_ID 0x11 */
-	  .map = { SNDRV_CHMAP_FL, SNDRV_CHMAP_FR, SNDRV_CHMAP_LFE,
-		   SNDRV_CHMAP_NA, SNDRV_CHMAP_RL, SNDRV_CHMAP_RR,
-		   SNDRV_CHMAP_RLC, SNDRV_CHMAP_RRC } },
-	{ .channels = 8, /* CA_ID 0x12 */
-	  .map = { SNDRV_CHMAP_FL, SNDRV_CHMAP_FR, SNDRV_CHMAP_NA,
-		   SNDRV_CHMAP_FC, SNDRV_CHMAP_RL, SNDRV_CHMAP_RR,
-		   SNDRV_CHMAP_RLC, SNDRV_CHMAP_RRC } },
-	{ .channels = 8, /* CA_ID 0x13 */
-	  .map = { SNDRV_CHMAP_FL, SNDRV_CHMAP_FR, SNDRV_CHMAP_LFE,
-		   SNDRV_CHMAP_FC, SNDRV_CHMAP_RL, SNDRV_CHMAP_RR,
-		   SNDRV_CHMAP_RLC, SNDRV_CHMAP_RRC } },
-	{ .channels = 8, /* CA_ID 0x14 */
-	  .map = { SNDRV_CHMAP_FL, SNDRV_CHMAP_FR, SNDRV_CHMAP_NA,
-		   SNDRV_CHMAP_NA, SNDRV_CHMAP_NA, SNDRV_CHMAP_NA,
-		   SNDRV_CHMAP_FLC, SNDRV_CHMAP_FRC } },
-	{ .channels = 8, /* CA_ID 0x15 */
-	  .map = { SNDRV_CHMAP_FL, SNDRV_CHMAP_FR, SNDRV_CHMAP_LFE,
-		   SNDRV_CHMAP_NA, SNDRV_CHMAP_NA, SNDRV_CHMAP_NA,
-		   SNDRV_CHMAP_FLC, SNDRV_CHMAP_FRC } },
-	{ .channels = 8, /* CA_ID 0x16 */
-	  .map = { SNDRV_CHMAP_FL, SNDRV_CHMAP_FR, SNDRV_CHMAP_NA,
-		   SNDRV_CHMAP_FC, SNDRV_CHMAP_NA, SNDRV_CHMAP_NA,
-		   SNDRV_CHMAP_FLC, SNDRV_CHMAP_FRC } },
-	{ .channels = 8, /* CA_ID 0x17 */
-	  .map = { SNDRV_CHMAP_FL, SNDRV_CHMAP_FR, SNDRV_CHMAP_LFE,
-		   SNDRV_CHMAP_FC, SNDRV_CHMAP_NA, SNDRV_CHMAP_NA,
-		   SNDRV_CHMAP_FLC, SNDRV_CHMAP_FRC } },
-	{ .channels = 8, /* CA_ID 0x18 */
-	  .map = { SNDRV_CHMAP_FL, SNDRV_CHMAP_FR, SNDRV_CHMAP_NA,
-		   SNDRV_CHMAP_NA, SNDRV_CHMAP_NA, SNDRV_CHMAP_NA,
-		   SNDRV_CHMAP_FLC, SNDRV_CHMAP_FRC } },
-	{ .channels = 8, /* CA_ID 0x19 */
-	  .map = { SNDRV_CHMAP_FL, SNDRV_CHMAP_FR, SNDRV_CHMAP_LFE,
-		   SNDRV_CHMAP_NA, SNDRV_CHMAP_NA, SNDRV_CHMAP_NA,
-		   SNDRV_CHMAP_FLC, SNDRV_CHMAP_FRC } },
-	{ .channels = 8, /* CA_ID 0x1A */
-	  .map = { SNDRV_CHMAP_FL, SNDRV_CHMAP_FR, SNDRV_CHMAP_NA,
-		   SNDRV_CHMAP_FC, SNDRV_CHMAP_NA, SNDRV_CHMAP_NA,
-		   SNDRV_CHMAP_FLC, SNDRV_CHMAP_FRC } },
-	{ .channels = 8, /* CA_ID 0x1B */
-	  .map = { SNDRV_CHMAP_FL, SNDRV_CHMAP_FR, SNDRV_CHMAP_LFE,
-		   SNDRV_CHMAP_FC, SNDRV_CHMAP_NA, SNDRV_CHMAP_NA,
-		   SNDRV_CHMAP_FLC, SNDRV_CHMAP_FRC } },
-	{ .channels = 8, /* CA_ID 0x1C */
-	  .map = { SNDRV_CHMAP_FL, SNDRV_CHMAP_FR, SNDRV_CHMAP_NA,
-		   SNDRV_CHMAP_NA, SNDRV_CHMAP_NA, SNDRV_CHMAP_NA,
-		   SNDRV_CHMAP_FLC, SNDRV_CHMAP_FRC } },
-	{ .channels = 8, /* CA_ID 0x1D */
-	  .map = { SNDRV_CHMAP_FL, SNDRV_CHMAP_FR, SNDRV_CHMAP_LFE,
-		   SNDRV_CHMAP_NA, SNDRV_CHMAP_NA, SNDRV_CHMAP_NA,
-		   SNDRV_CHMAP_FLC, SNDRV_CHMAP_FRC } },
-	{ .channels = 8, /* CA_ID 0x1E */
-	  .map = { SNDRV_CHMAP_FL, SNDRV_CHMAP_FR, SNDRV_CHMAP_NA,
-		   SNDRV_CHMAP_FC, SNDRV_CHMAP_NA, SNDRV_CHMAP_NA,
-		   SNDRV_CHMAP_FLC, SNDRV_CHMAP_FRC } },
-	{ .channels = 8, /* CA_ID 0x1F */
-	  .map = { SNDRV_CHMAP_FL, SNDRV_CHMAP_FR, SNDRV_CHMAP_LFE,
-		   SNDRV_CHMAP_FC, SNDRV_CHMAP_NA, SNDRV_CHMAP_NA,
-		   SNDRV_CHMAP_FLC, SNDRV_CHMAP_FRC } },
-	{ }
-};
-
-/*
- * hdmi_codec_channel_alloc: speaker configuration available for CEA
- *
- * This is an ordered list that must match with hdmi_codec_8ch_chmaps struct
- * The preceding ones have better chances to be selected by
- * hdmi_codec_get_ch_alloc_table_idx().
- */
-static const struct hdmi_codec_cea_spk_alloc hdmi_codec_channel_alloc[] = {
-	{ .ca_id = 0x00, .n_ch = 2,
-	  .mask = FL | FR},
-	/* 2.1 */
-	{ .ca_id = 0x01, .n_ch = 4,
-	  .mask = FL | FR | LFE},
-	/* Dolby Surround */
-	{ .ca_id = 0x02, .n_ch = 4,
-	  .mask = FL | FR | FC },
-	/* surround51 */
-	{ .ca_id = 0x0b, .n_ch = 6,
-	  .mask = FL | FR | LFE | FC | RL | RR},
-	/* surround40 */
-	{ .ca_id = 0x08, .n_ch = 6,
-	  .mask = FL | FR | RL | RR },
-	/* surround41 */
-	{ .ca_id = 0x09, .n_ch = 6,
-	  .mask = FL | FR | LFE | RL | RR },
-	/* surround50 */
-	{ .ca_id = 0x0a, .n_ch = 6,
-	  .mask = FL | FR | FC | RL | RR },
-	/* 6.1 */
-	{ .ca_id = 0x0f, .n_ch = 8,
-	  .mask = FL | FR | LFE | FC | RL | RR | RC },
-	/* surround71 */
-	{ .ca_id = 0x13, .n_ch = 8,
-	  .mask = FL | FR | LFE | FC | RL | RR | RLC | RRC },
-	/* others */
-	{ .ca_id = 0x03, .n_ch = 8,
-	  .mask = FL | FR | LFE | FC },
-	{ .ca_id = 0x04, .n_ch = 8,
-	  .mask = FL | FR | RC},
-	{ .ca_id = 0x05, .n_ch = 8,
-	  .mask = FL | FR | LFE | RC },
-	{ .ca_id = 0x06, .n_ch = 8,
-	  .mask = FL | FR | FC | RC },
-	{ .ca_id = 0x07, .n_ch = 8,
-	  .mask = FL | FR | LFE | FC | RC },
-	{ .ca_id = 0x0c, .n_ch = 8,
-	  .mask = FL | FR | RC | RL | RR },
-	{ .ca_id = 0x0d, .n_ch = 8,
-	  .mask = FL | FR | LFE | RL | RR | RC },
-	{ .ca_id = 0x0e, .n_ch = 8,
-	  .mask = FL | FR | FC | RL | RR | RC },
-	{ .ca_id = 0x10, .n_ch = 8,
-	  .mask = FL | FR | RL | RR | RLC | RRC },
-	{ .ca_id = 0x11, .n_ch = 8,
-	  .mask = FL | FR | LFE | RL | RR | RLC | RRC },
-	{ .ca_id = 0x12, .n_ch = 8,
-	  .mask = FL | FR | FC | RL | RR | RLC | RRC },
-	{ .ca_id = 0x14, .n_ch = 8,
-	  .mask = FL | FR | FLC | FRC },
-	{ .ca_id = 0x15, .n_ch = 8,
-	  .mask = FL | FR | LFE | FLC | FRC },
-	{ .ca_id = 0x16, .n_ch = 8,
-	  .mask = FL | FR | FC | FLC | FRC },
-	{ .ca_id = 0x17, .n_ch = 8,
-	  .mask = FL | FR | LFE | FC | FLC | FRC },
-	{ .ca_id = 0x18, .n_ch = 8,
-	  .mask = FL | FR | RC | FLC | FRC },
-	{ .ca_id = 0x19, .n_ch = 8,
-	  .mask = FL | FR | LFE | RC | FLC | FRC },
-	{ .ca_id = 0x1a, .n_ch = 8,
-	  .mask = FL | FR | RC | FC | FLC | FRC },
-	{ .ca_id = 0x1b, .n_ch = 8,
-	  .mask = FL | FR | LFE | RC | FC | FLC | FRC },
-	{ .ca_id = 0x1c, .n_ch = 8,
-	  .mask = FL | FR | RL | RR | FLC | FRC },
-	{ .ca_id = 0x1d, .n_ch = 8,
-	  .mask = FL | FR | LFE | RL | RR | FLC | FRC },
-	{ .ca_id = 0x1e, .n_ch = 8,
-	  .mask = FL | FR | FC | RL | RR | FLC | FRC },
-	{ .ca_id = 0x1f, .n_ch = 8,
-	  .mask = FL | FR | LFE | FC | RL | RR | FLC | FRC },
-};
-
-static unsigned long hdmi_codec_spk_mask_from_alloc(int spk_alloc)
-{
-	int i;
-	static const unsigned long hdmi_codec_eld_spk_alloc_bits[] = {
-		[0] = FL | FR, [1] = LFE, [2] = FC, [3] = RL | RR,
-		[4] = RC, [5] = FLC | FRC, [6] = RLC | RRC,
-	};
-	unsigned long spk_mask = 0;
-
-	for (i = 0; i < ARRAY_SIZE(hdmi_codec_eld_spk_alloc_bits); i++) {
-		if (spk_alloc & (1 << i))
-			spk_mask |= hdmi_codec_eld_spk_alloc_bits[i];
-	}
-
-	return spk_mask;
-}
-
-static int hdmi_codec_get_ch_alloc_table_idx(struct vc4_hdmi *vc4_hdmi,
-					     unsigned char channels)
-{
-	struct drm_connector *connector = &vc4_hdmi->connector;
-	int i;
-	u8 spk_alloc;
-	unsigned long spk_mask;
-	const struct hdmi_codec_cea_spk_alloc *cap = hdmi_codec_channel_alloc;
-
-	spk_alloc = drm_eld_get_spk_alloc(connector->eld);
-	spk_mask = hdmi_codec_spk_mask_from_alloc(spk_alloc);
-
-	for (i = 0; i < ARRAY_SIZE(hdmi_codec_channel_alloc); i++, cap++) {
-		/* If spk_alloc == 0, HDMI is unplugged return stereo config*/
-		if (!spk_alloc && cap->ca_id == 0)
-			return i;
-		if (cap->n_ch != channels)
-			continue;
-		if (!(cap->mask == (spk_mask & cap->mask)))
-			continue;
-		return i;
-	}
-
-	return -EINVAL;
-}
-
-static void hdmi_codec_eld_chmap(struct vc4_hdmi *vc4_hdmi)
-{
-	struct drm_connector *connector = &vc4_hdmi->connector;
-	u8 spk_alloc;
-	unsigned long spk_mask;
-
-	spk_alloc = drm_eld_get_spk_alloc(connector->eld);
-	spk_mask = hdmi_codec_spk_mask_from_alloc(spk_alloc);
-
-	/* Detect if only stereo supported, else return 8 channels mappings */
-	if ((spk_mask & ~(FL | FR)))
-		vc4_hdmi->audio.chmap = hdmi_codec_8ch_chmaps;
-	else
-		vc4_hdmi->audio.chmap = hdmi_codec_stereo_chmaps;
-}
 
 static int vc4_hdmi_debugfs_regs(struct seq_file *m, void *unused)
 {
@@ -655,9 +348,6 @@ static void vc4_hdmi_set_audio_infoframe(struct drm_encoder *encoder)
 	frame.audio.sample_frequency = HDMI_AUDIO_SAMPLE_FREQUENCY_STREAM;
 	frame.audio.sample_size = HDMI_AUDIO_SAMPLE_SIZE_STREAM;
 	frame.audio.channels = vc4_hdmi->audio.channels;
-
-	/* Select a channel allocation that matches with ELD and pcm channels */
-	frame.audio.channel_allocation = vc4_hdmi->audio.chmap_idx;
 
 	vc4_hdmi_write_infoframe(encoder, &frame);
 }
@@ -1190,10 +880,6 @@ static int vc4_hdmi_audio_startup(struct snd_pcm_substream *substream,
 	if (ret)
 		return ret;
 
-	/* Select chmap supported */
-	vc4_hdmi->audio.max_channels = 8;
-	hdmi_codec_eld_chmap(vc4_hdmi);
-
 	return 0;
 }
 
@@ -1231,69 +917,25 @@ static void vc4_hdmi_audio_shutdown(struct snd_pcm_substream *substream,
 	vc4_hdmi->audio.substream = NULL;
 }
 
-static int sample_rate_to_mai_fmt(int samplerate)
-{
-   switch(samplerate)
-   {
-      case 8000:
-         return VC4_HDMI_MAI_SAMPLE_RATE_8000;
-      case 11025:
-         return VC4_HDMI_MAI_SAMPLE_RATE_11025;
-      case 12000:
-         return VC4_HDMI_MAI_SAMPLE_RATE_12000;
-      case 16000:
-         return VC4_HDMI_MAI_SAMPLE_RATE_16000;
-      case 22050:
-         return VC4_HDMI_MAI_SAMPLE_RATE_22050;
-      case 24000:
-         return VC4_HDMI_MAI_SAMPLE_RATE_24000;
-      case 32000:
-         return VC4_HDMI_MAI_SAMPLE_RATE_32000;
-      case 44100:
-         return VC4_HDMI_MAI_SAMPLE_RATE_44100;
-      case 48000:
-         return VC4_HDMI_MAI_SAMPLE_RATE_48000;
-      case 64000:
-         return VC4_HDMI_MAI_SAMPLE_RATE_64000;
-      case 88200:
-         return VC4_HDMI_MAI_SAMPLE_RATE_88200;
-      case 96000:
-         return VC4_HDMI_MAI_SAMPLE_RATE_96000;
-      case 128000:
-         return VC4_HDMI_MAI_SAMPLE_RATE_128000;
-      case 176400:
-         return VC4_HDMI_MAI_SAMPLE_RATE_176400;
-      case 192000:
-         return VC4_HDMI_MAI_SAMPLE_RATE_192000;
-      default:
-         return VC4_HDMI_MAI_SAMPLE_RATE_NOT_INDICATED;
-   }
-}
-
 /* HDMI audio codec callbacks */
-static int vc4_hdmi_audio_prepare(struct snd_pcm_substream *substream,
+static int vc4_hdmi_audio_hw_params(struct snd_pcm_substream *substream,
+				    struct snd_pcm_hw_params *params,
 				    struct snd_soc_dai *dai)
 {
 	struct vc4_hdmi *vc4_hdmi = dai_to_hdmi(dai);
 	struct device *dev = &vc4_hdmi->pdev->dev;
 	u32 audio_packet_config, channel_mask;
 	u32 channel_map;
-	u32 mai_audio_format;
-	u32 mai_sample_rate;
-	int idx;
 
 	if (substream != vc4_hdmi->audio.substream)
 		return -EINVAL;
 
-	dev_dbg(dev, "%s: %u Hz, %d bit, %d channels AES0=%02x\n",
-		__func__,
-		substream->runtime->rate,
-		snd_pcm_format_width(substream->runtime->format),
-		substream->runtime->channels,
-		vc4_hdmi->audio.iec_status[0]);
+	dev_dbg(dev, "%s: %u Hz, %d bit, %d channels\n", __func__,
+		params_rate(params), params_width(params),
+		params_channels(params));
 
-	vc4_hdmi->audio.channels = substream->runtime->channels;
-	vc4_hdmi->audio.samplerate = substream->runtime->rate;
+	vc4_hdmi->audio.channels = params_channels(params);
+	vc4_hdmi->audio.samplerate = params_rate(params);
 
 	HDMI_WRITE(HDMI_MAI_CTL,
 		 VC4_HD_MAI_CTL_RESET |
@@ -1303,16 +945,6 @@ static int vc4_hdmi_audio_prepare(struct snd_pcm_substream *substream,
 		 VC4_HD_MAI_CTL_ERRORF);
 
 	vc4_hdmi_audio_set_mai_clock(vc4_hdmi);
-
-	mai_sample_rate = sample_rate_to_mai_fmt(vc4_hdmi->audio.samplerate);
-	if (vc4_hdmi->audio.iec_status[0] & IEC958_AES0_NONAUDIO &&
-		vc4_hdmi->audio.channels == 8)
-		mai_audio_format = VC4_HDMI_MAI_FORMAT_HBR;
-	else
-		mai_audio_format = VC4_HDMI_MAI_FORMAT_PCM;
-	HDMI_WRITE(HDMI_MAI_FMT,
-		VC4_SET_FIELD(mai_sample_rate, VC4_HDMI_MAI_FORMAT_SAMPLE_RATE) |
-		VC4_SET_FIELD(mai_audio_format, VC4_HDMI_MAI_FORMAT_AUDIO_FORMAT));
 
 	/* The B frame identifier should match the value used by alsa-lib (8) */
 	audio_packet_config =
@@ -1324,30 +956,31 @@ static int vc4_hdmi_audio_prepare(struct snd_pcm_substream *substream,
 	audio_packet_config |= VC4_SET_FIELD(channel_mask,
 					     VC4_HDMI_AUDIO_PACKET_CEA_MASK);
 
-	/* Set the MAI threshold */
-	HDMI_WRITE(HDMI_MAI_THR,
-		 VC4_SET_FIELD(0x10, VC4_HD_MAI_THR_PANICHIGH) |
-		 VC4_SET_FIELD(0x10, VC4_HD_MAI_THR_PANICLOW) |
-		 VC4_SET_FIELD(0x10, VC4_HD_MAI_THR_DREQHIGH) |
-		 VC4_SET_FIELD(0x10, VC4_HD_MAI_THR_DREQLOW));
+	/* Set the MAI threshold.  This logic mimics the firmware's. */
+	if (vc4_hdmi->audio.samplerate > 96000) {
+		HDMI_WRITE(HDMI_MAI_THR,
+			 VC4_SET_FIELD(0x12, VC4_HD_MAI_THR_DREQHIGH) |
+			 VC4_SET_FIELD(0x12, VC4_HD_MAI_THR_DREQLOW));
+	} else if (vc4_hdmi->audio.samplerate > 48000) {
+		HDMI_WRITE(HDMI_MAI_THR,
+			 VC4_SET_FIELD(0x14, VC4_HD_MAI_THR_DREQHIGH) |
+			 VC4_SET_FIELD(0x12, VC4_HD_MAI_THR_DREQLOW));
+	} else {
+		HDMI_WRITE(HDMI_MAI_THR,
+			 VC4_SET_FIELD(0x10, VC4_HD_MAI_THR_PANICHIGH) |
+			 VC4_SET_FIELD(0x10, VC4_HD_MAI_THR_PANICLOW) |
+			 VC4_SET_FIELD(0x10, VC4_HD_MAI_THR_DREQHIGH) |
+			 VC4_SET_FIELD(0x10, VC4_HD_MAI_THR_DREQLOW));
+	}
 
 	HDMI_WRITE(HDMI_MAI_CONFIG,
 		   VC4_HDMI_MAI_CONFIG_BIT_REVERSE |
-		   VC4_HDMI_MAI_CONFIG_FORMAT_REVERSE |
 		   VC4_SET_FIELD(channel_mask, VC4_HDMI_MAI_CHANNEL_MASK));
 
 	channel_map = vc4_hdmi->variant->channel_map(vc4_hdmi, channel_mask);
 	HDMI_WRITE(HDMI_MAI_CHANNEL_MAP, channel_map);
 	HDMI_WRITE(HDMI_AUDIO_PACKET_CONFIG, audio_packet_config);
 	vc4_hdmi_set_n_cts(vc4_hdmi);
-
-	idx = hdmi_codec_get_ch_alloc_table_idx(vc4_hdmi, vc4_hdmi->audio.channels);
-	if (idx < 0) {
-		DRM_ERROR("Not able to map channels to speakers (%d)\n", idx);
-		vc4_hdmi->audio.chmap_idx = HDMI_CODEC_CHMAP_IDX_UNKNOWN;
-	} else {
-		vc4_hdmi->audio.chmap_idx = hdmi_codec_channel_alloc[idx].ca_id;
-	}
 
 	return 0;
 }
@@ -1369,8 +1002,6 @@ static int vc4_hdmi_audio_trigger(struct snd_pcm_substream *substream, int cmd,
 		HDMI_WRITE(HDMI_MAI_CTL,
 			 VC4_SET_FIELD(vc4_hdmi->audio.channels,
 				       VC4_HD_MAI_CTL_CHNUM) |
-				       VC4_HD_MAI_CTL_WHOLSMP |
-				       VC4_HD_MAI_CTL_CHALIGN |
 			 VC4_HD_MAI_CTL_ENABLE);
 		break;
 	case SNDRV_PCM_TRIGGER_STOP:
@@ -1426,130 +1057,6 @@ static int vc4_hdmi_audio_eld_ctl_get(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
-static int vc4_spdif_info(struct snd_kcontrol *kcontrol,
-			  struct snd_ctl_elem_info *uinfo)
-{
-	uinfo->type = SNDRV_CTL_ELEM_TYPE_IEC958;
-	uinfo->count = 1;
-	return 0;
-}
-
-static int vc4_spdif_playback_get(struct snd_kcontrol *kcontrol,
-				  struct snd_ctl_elem_value *ucontrol)
-{
-	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
-	struct vc4_hdmi *vc4_hdmi = snd_component_to_hdmi(component);
-
-	memcpy(ucontrol->value.iec958.status, vc4_hdmi->audio.iec_status,
-		sizeof(vc4_hdmi->audio.iec_status));
-
-	return 0;
-}
-
-static int vc4_spdif_playback_put(struct snd_kcontrol *kcontrol,
-				  struct snd_ctl_elem_value *ucontrol)
-{
-	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
-	struct vc4_hdmi *vc4_hdmi = snd_component_to_hdmi(component);
-
-	memcpy(vc4_hdmi->audio.iec_status, ucontrol->value.iec958.status,
-		sizeof(vc4_hdmi->audio.iec_status));
-
-	return 0;
-}
-
-static int vc4_spdif_mask_get(struct snd_kcontrol *kcontrol,
-			      struct snd_ctl_elem_value *ucontrol)
-{
-	memset(ucontrol->value.iec958.status, 0xff,
-		FIELD_SIZEOF(struct vc4_hdmi_audio, iec_status));
-
-	return 0;
-}
-
-/*
- * ALSA API channel-map control callbacks
- */
-static int vc4_chmap_ctl_info(struct snd_kcontrol *kcontrol,
-				struct snd_ctl_elem_info *uinfo)
-{
-	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
-	struct vc4_hdmi *vc4_hdmi = snd_component_to_hdmi(component);
-
-	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
-	uinfo->count = vc4_hdmi->audio.max_channels;
-	uinfo->value.integer.min = 0;
-	uinfo->value.integer.max = SNDRV_CHMAP_LAST;
-
-	return 0;
-}
-
-static int vc4_chmap_ctl_get(struct snd_kcontrol *kcontrol,
-			     struct snd_ctl_elem_value *ucontrol)
-{
-	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
-	struct vc4_hdmi *vc4_hdmi = snd_component_to_hdmi(component);
-	unsigned const char *map;
-	unsigned int i;
-
-	if (!vc4_hdmi->audio.chmap)
-		return -EINVAL;
-
-	map = vc4_hdmi->audio.chmap[vc4_hdmi->audio.chmap_idx].map;
-
-	for (i = 0; i < vc4_hdmi->audio.max_channels; i++) {
-		if (vc4_hdmi->audio.chmap_idx == HDMI_CODEC_CHMAP_IDX_UNKNOWN)
-			ucontrol->value.integer.value[i] = 0;
-		else
-			ucontrol->value.integer.value[i] = map[i];
-	}
-	return 0;
-}
-
-static int vc4_chmap_ctl_tlv(struct snd_kcontrol *kcontrol, int op_flag,
-			     unsigned int size, unsigned int __user *tlv)
-{
-	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
-	struct vc4_hdmi *vc4_hdmi = snd_component_to_hdmi(component);
-	const struct snd_pcm_chmap_elem *map;
-	unsigned int __user *dst;
-	int c, count = 0;
-
-	if (!vc4_hdmi->audio.chmap)
-		return -EINVAL;
-	if (size < 8)
-		return -ENOMEM;
-	if (put_user(SNDRV_CTL_TLVT_CONTAINER, tlv))
-		return -EFAULT;
-	size -= 8;
-	dst = tlv + 2;
-	for (map = vc4_hdmi->audio.chmap; map->channels; map++) {
-		int chs_bytes = map->channels * 4;
-		//if (!valid_chmap_channels(info, map->channels))
-		//	continue;
-		if (size < 8)
-			return -ENOMEM;
-		if (put_user(SNDRV_CTL_TLVT_CHMAP_FIXED, dst) ||
-		    put_user(chs_bytes, dst + 1))
-			return -EFAULT;
-		dst += 2;
-		size -= 8;
-		count += 8;
-		if (size < chs_bytes)
-			return -ENOMEM;
-		size -= chs_bytes;
-		count += chs_bytes;
-		for (c = 0; c < map->channels; c++) {
-			if (put_user(map->map[c], dst))
-				return -EFAULT;
-			dst++;
-		}
-	}
-	if (put_user(count, tlv + 1))
-		return -EFAULT;
-	return 0;
-}
-
 static const struct snd_kcontrol_new vc4_hdmi_audio_controls[] = {
 	{
 		.access = SNDRV_CTL_ELEM_ACCESS_READ |
@@ -1558,29 +1065,6 @@ static const struct snd_kcontrol_new vc4_hdmi_audio_controls[] = {
 		.name = "ELD",
 		.info = vc4_hdmi_audio_eld_ctl_info,
 		.get = vc4_hdmi_audio_eld_ctl_get,
-	},
-	{
-		.iface =   SNDRV_CTL_ELEM_IFACE_MIXER,
-		.name =    SNDRV_CTL_NAME_IEC958("", PLAYBACK, DEFAULT),
-		.info =    vc4_spdif_info,
-		.get =     vc4_spdif_playback_get,
-		.put =     vc4_spdif_playback_put,
-	},
-	{
-		.iface =   SNDRV_CTL_ELEM_IFACE_MIXER,
-		.name =    SNDRV_CTL_NAME_IEC958("", PLAYBACK, MASK),
-		.info =    vc4_spdif_info,
-		.get =     vc4_spdif_mask_get,
-	},
-	{
-		.access = SNDRV_CTL_ELEM_ACCESS_READ |
-			SNDRV_CTL_ELEM_ACCESS_TLV_READ |
-			SNDRV_CTL_ELEM_ACCESS_TLV_CALLBACK,
-		.iface = SNDRV_CTL_ELEM_IFACE_PCM,
-		.name = "Playback Channel Map",
-		.info = vc4_chmap_ctl_info,
-		.get = vc4_chmap_ctl_get,
-		.tlv.c = vc4_chmap_ctl_tlv,
 	},
 };
 
@@ -1608,7 +1092,7 @@ static const struct snd_soc_component_driver vc4_hdmi_audio_component_drv = {
 static const struct snd_soc_dai_ops vc4_hdmi_audio_dai_ops = {
 	.startup = vc4_hdmi_audio_startup,
 	.shutdown = vc4_hdmi_audio_shutdown,
-	.prepare = vc4_hdmi_audio_prepare,
+	.hw_params = vc4_hdmi_audio_hw_params,
 	.set_fmt = vc4_hdmi_audio_set_fmt,
 	.trigger = vc4_hdmi_audio_trigger,
 };
@@ -1702,11 +1186,6 @@ static int vc4_hdmi_audio_init(struct vc4_hdmi *vc4_hdmi)
 	vc4_hdmi->audio.dma_data.addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
 	vc4_hdmi->audio.dma_data.maxburst = 2;
 
-	vc4_hdmi->audio.iec_status[0] = IEC958_AES0_CON_NOT_COPYRIGHT;
-	vc4_hdmi->audio.iec_status[1] =
-		IEC958_AES1_CON_ORIGINAL | IEC958_AES1_CON_PCM_CODER;
-	vc4_hdmi->audio.iec_status[3] = IEC958_AES3_CON_FS_48000;
-
 	ret = devm_snd_dmaengine_pcm_register(dev, &pcm_conf, 0);
 	if (ret) {
 		dev_err(dev, "Could not register PCM component: %d\n", ret);
@@ -1748,7 +1227,6 @@ static int vc4_hdmi_audio_init(struct vc4_hdmi *vc4_hdmi)
 	card->name = vc4_hdmi->variant->id ? "vc4-hdmi1" : "vc4-hdmi";
 	card->driver_name = "vc4-hdmi";
 	card->dev = dev;
-	card->owner = THIS_MODULE;
 
 	/*
 	 * Be careful, snd_soc_register_card() calls dev_set_drvdata() and

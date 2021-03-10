@@ -3210,7 +3210,7 @@ M:	Raspberry Pi Kernel Maintenance <kernel-list@raspberrypi.com>
 L:	linux-media@vger.kernel.org
 S:	Maintained
 F:	drivers/media/platform/bcm2835/
-F:	Documentation/devicetree/bindings/media/brcm,bcm2835-unicam.yaml
+F:	Documentation/devicetree/bindings/media/bcm2835-unicam.txt
 
 BROADCOM BCM2835 ISP DRIVER
 M:	Raspberry Pi Kernel Maintenance <kernel-list@raspberrypi.com>
@@ -4051,7 +4051,6 @@ B:	https://github.com/ClangBuiltLinux/linux/issues
 C:	irc://chat.freenode.net/clangbuiltlinux
 S:	Supported
 K:	\b(?i:clang|llvm)\b
-F:	Documentation/kbuild/llvm.rst
 
 CLEANCACHE API
 M:	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
@@ -15199,14 +15198,6 @@ T:	git git://linuxtv.org/media_tree.git
 S:	Maintained
 F:	drivers/media/i2c/imx274.c
 F:	Documentation/devicetree/bindings/media/i2c/imx274.txt
-
-SONY IMX290 SENSOR DRIVER
-M:	Manivannan Sadhasivam <manivannan.sadhasivam@linaro.org>
-L:	linux-media@vger.kernel.org
-T:	git git://linuxtv.org/media_tree.git
-S:	Maintained
-F:	drivers/media/i2c/imx290.c
-F:	Documentation/devicetree/bindings/media/i2c/imx290.txt
 
 SONY IMX319 SENSOR DRIVER
 M:	Bingbu Cao <bingbu.cao@intel.com>

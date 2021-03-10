@@ -221,12 +221,6 @@ enum tls_context_flags {
 	 * to be atomic.
 	 */
 	TLS_TX_SYNC_SCHED = 1,
-	/* tls_dev_del was called for the RX side, device state was released,
-	 * but tls_ctx->netdev might still be kept, because TX-side driver
-	 * resources might not be released yet. Used to prevent the second
-	 * tls_dev_del call in tls_device_down if it happens simultaneously.
-	 */
-	TLS_RX_DEV_CLOSED = 2,
 };
 
 struct cipher_context {
@@ -594,15 +588,6 @@ static inline bool tls_sw_has_ctx_tx(const struct sock *sk)
 	if (!ctx)
 		return false;
 	return !!tls_sw_ctx_tx(ctx);
-}
-
-static inline bool tls_sw_has_ctx_rx(const struct sock *sk)
-{
-	struct tls_context *ctx = tls_get_ctx(sk);
-
-	if (!ctx)
-		return false;
-	return !!tls_sw_ctx_rx(ctx);
 }
 
 void tls_sw_write_space(struct sock *sk, struct tls_context *ctx);

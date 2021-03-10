@@ -391,7 +391,7 @@ dw_edma_device_transfer(struct dw_edma_transfer *xfer)
 			if (xfer->cyclic) {
 				burst->dar = xfer->xfer.cyclic.paddr;
 			} else {
-				burst->dar = dst_addr;
+				burst->dar = sg_dma_address(sg);
 				/* Unlike the typical assumption by other
 				 * drivers/IPs the peripheral memory isn't
 				 * a FIFO memory, in this case, it's a
@@ -399,13 +399,14 @@ dw_edma_device_transfer(struct dw_edma_transfer *xfer)
 				 * and destination addresses are increased
 				 * by the same portion (data length)
 				 */
+				src_addr += sg_dma_len(sg);
 			}
 		} else {
 			burst->dar = dst_addr;
 			if (xfer->cyclic) {
 				burst->sar = xfer->xfer.cyclic.paddr;
 			} else {
-				burst->sar = src_addr;
+				burst->sar = sg_dma_address(sg);
 				/* Unlike the typical assumption by other
 				 * drivers/IPs the peripheral memory isn't
 				 * a FIFO memory, in this case, it's a
@@ -413,14 +414,12 @@ dw_edma_device_transfer(struct dw_edma_transfer *xfer)
 				 * and destination addresses are increased
 				 * by the same portion (data length)
 				 */
+				dst_addr += sg_dma_len(sg);
 			}
 		}
 
-		if (!xfer->cyclic) {
-			src_addr += sg_dma_len(sg);
-			dst_addr += sg_dma_len(sg);
+		if (!xfer->cyclic)
 			sg = sg_next(sg);
-		}
 	}
 
 	return vchan_tx_prep(&chan->vc, &desc->vd, xfer->flags);

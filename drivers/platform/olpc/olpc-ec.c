@@ -439,9 +439,7 @@ static int olpc_ec_probe(struct platform_device *pdev)
 								&config);
 	if (IS_ERR(ec->dcon_rdev)) {
 		dev_err(&pdev->dev, "failed to register DCON regulator\n");
-		err = PTR_ERR(ec->dcon_rdev);
-		kfree(ec);
-		return err;
+		return PTR_ERR(ec->dcon_rdev);
 	}
 
 	ec->dbgfs_dir = olpc_ec_setup_debugfs();

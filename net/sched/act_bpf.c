@@ -361,7 +361,9 @@ static int tcf_bpf_init(struct net *net, struct nlattr *nla,
 	if (goto_ch)
 		tcf_chain_put_by_act(goto_ch);
 
-	if (res != ACT_P_CREATED) {
+	if (res == ACT_P_CREATED) {
+		tcf_idr_insert(tn, *act);
+	} else {
 		/* make sure the program being replaced is no longer executing */
 		synchronize_rcu();
 		tcf_bpf_cfg_cleanup(&old);

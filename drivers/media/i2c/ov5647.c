@@ -606,8 +606,8 @@ static struct ov5647_mode supported_modes_8bit[] = {
 			.height = 480
 		},
 		.crop = {
-			.left = OV5647_PIXEL_ARRAY_LEFT,
-			.top = OV5647_PIXEL_ARRAY_TOP,
+			.left = 0,
+			.top = 0,
 			.width = 1280,
 			.height = 960,
 		},
@@ -632,8 +632,8 @@ static struct ov5647_mode supported_modes_10bit[] = {
 			.height = 1944
 		},
 		.crop = {
-			.left = OV5647_PIXEL_ARRAY_LEFT,
-			.top = OV5647_PIXEL_ARRAY_TOP,
+			.left = 0,
+			.top = 0,
 			.width = 2592,
 			.height = 1944
 		},
@@ -656,8 +656,8 @@ static struct ov5647_mode supported_modes_10bit[] = {
 			.height = 1080
 		},
 		.crop = {
-			.left = 364,
-			.top = 450,
+			.left = 348,
+			.top = 434,
 			.width = 1928,
 			.height = 1080,
 		},
@@ -679,8 +679,8 @@ static struct ov5647_mode supported_modes_10bit[] = {
 			.height = 972
 		},
 		.crop = {
-			.left = OV5647_PIXEL_ARRAY_LEFT,
-			.top = OV5647_PIXEL_ARRAY_TOP,
+			.left = 0,
+			.top = 0,
 			.width = 2592,
 			.height = 1944,
 		},
@@ -703,8 +703,8 @@ static struct ov5647_mode supported_modes_10bit[] = {
 			.height = 480
 		},
 		.crop = {
-			.left = OV5647_PIXEL_ARRAY_LEFT,
-			.top = OV5647_PIXEL_ARRAY_TOP,
+			.left = 16,
+			.top = 0,
 			.width = 2560,
 			.height = 1920,
 		},
@@ -1080,7 +1080,6 @@ static int ov5647_get_selection(struct v4l2_subdev *sd,
 		return 0;
 
 	case V4L2_SEL_TGT_CROP_DEFAULT:
-	case V4L2_SEL_TGT_CROP_BOUNDS:
 		sel->r.top = OV5647_PIXEL_ARRAY_TOP;
 		sel->r.left = OV5647_PIXEL_ARRAY_LEFT;
 		sel->r.width = OV5647_PIXEL_ARRAY_WIDTH;
@@ -1502,7 +1501,6 @@ static int ov5647_probe(struct i2c_client *client)
 	struct device_node *np = client->dev.of_node;
 	u32 xclk_freq;
 	int hblank, exposure_max, exposure_def;
-	struct v4l2_fwnode_device_properties props;
 
 	sensor = devm_kzalloc(dev, sizeof(*sensor), GFP_KERNEL);
 	if (!sensor)
@@ -1536,7 +1534,7 @@ static int ov5647_probe(struct i2c_client *client)
 	mutex_init(&sensor->lock);
 
 	/* Initialise controls. */
-	v4l2_ctrl_handler_init(&sensor->ctrls, 9);
+	v4l2_ctrl_handler_init(&sensor->ctrls, 7);
 	v4l2_ctrl_new_std(&sensor->ctrls, &ov5647_ctrl_ops,
 			  V4L2_CID_AUTOGAIN,
 			  0,  /* min */
@@ -1600,16 +1598,6 @@ static int ov5647_probe(struct i2c_client *client)
 			__func__, ret);
 		goto error;
 	}
-
-	ret = v4l2_fwnode_device_parse(&client->dev, &props);
-	if (ret)
-		goto error;
-
-	ret = v4l2_ctrl_new_fwnode_properties(&sensor->ctrls, &ov5647_ctrl_ops,
-					      &props);
-	if (ret)
-		goto error;
-
 	sensor->sd.ctrl_handler = &sensor->ctrls;
 
 	/* Write out the register set over I2C on stream-on. */

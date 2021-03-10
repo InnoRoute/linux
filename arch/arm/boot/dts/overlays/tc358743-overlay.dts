@@ -86,22 +86,8 @@
 		};
 	};
 
-	fragment@7 {
-		target = <&csi1_ep>;
-		__overlay__ {
-			data-lanes = <1 2>;
-		};
-	};
-
-	fragment@8 {
-		target = <&csi1_ep>;
-		__dormant__ {
-			data-lanes = <1 2 3 4>;
-		};
-	};
-
 	__overrides__ {
-		4lane = <0>, "-2+3-7+8";
+		4lane = <0>, "-2+3";
 		link-frequency = <&tc358743>,"link-frequencies#0";
 	};
 };

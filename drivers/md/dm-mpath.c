@@ -1190,25 +1190,17 @@ static void multipath_wait_for_pg_init_completion(struct multipath *m)
 static void flush_multipath_work(struct multipath *m)
 {
 	if (m->hw_handler_name) {
-		unsigned long flags;
+		set_bit(MPATHF_PG_INIT_DISABLED, &m->flags);
+		smp_mb__after_atomic();
 
-		if (!atomic_read(&m->pg_init_in_progress))
-			goto skip;
-
-		spin_lock_irqsave(&m->lock, flags);
-		if (atomic_read(&m->pg_init_in_progress) &&
-		    !test_and_set_bit(MPATHF_PG_INIT_DISABLED, &m->flags)) {
-			spin_unlock_irqrestore(&m->lock, flags);
-
+		if (atomic_read(&m->pg_init_in_progress))
 			flush_workqueue(kmpath_handlerd);
-			multipath_wait_for_pg_init_completion(m);
+		multipath_wait_for_pg_init_completion(m);
 
-			spin_lock_irqsave(&m->lock, flags);
-			clear_bit(MPATHF_PG_INIT_DISABLED, &m->flags);
-		}
-		spin_unlock_irqrestore(&m->lock, flags);
+		clear_bit(MPATHF_PG_INIT_DISABLED, &m->flags);
+		smp_mb__after_atomic();
 	}
-skip:
+
 	if (m->queue_mode == DM_TYPE_BIO_BASED)
 		flush_work(&m->process_queued_bios);
 	flush_work(&m->trigger_event);
@@ -1864,7 +1856,7 @@ static int multipath_prepare_ioctl(struct dm_target *ti,
 	int r;
 
 	current_pgpath = READ_ONCE(m->current_pgpath);
-	if (!current_pgpath || !test_bit(MPATHF_QUEUE_IO, &m->flags))
+	if (!current_pgpath)
 		current_pgpath = choose_pgpath(m, 0);
 
 	if (current_pgpath) {

@@ -316,10 +316,13 @@ static int first_shadow_cpu(struct perf_stat_config *config,
 	struct evlist *evlist = evsel->evlist;
 	int i;
 
+	if (!config->aggr_get_id)
+		return 0;
+
 	if (config->aggr_mode == AGGR_NONE)
 		return id;
 
-	if (!config->aggr_get_id)
+	if (config->aggr_mode == AGGR_GLOBAL)
 		return 0;
 
 	for (i = 0; i < perf_evsel__nr_cpus(evsel); i++) {
@@ -658,7 +661,7 @@ static void print_aggr(struct perf_stat_config *config,
 	int s;
 	bool first;
 
-	if (!config->aggr_map || !config->aggr_get_id)
+	if (!(config->aggr_map || config->aggr_get_id))
 		return;
 
 	aggr_update_shadow(config, evlist);
@@ -1137,7 +1140,7 @@ static void print_percore(struct perf_stat_config *config,
 	int s;
 	bool first = true;
 
-	if (!config->aggr_map || !config->aggr_get_id)
+	if (!(config->aggr_map || config->aggr_get_id))
 		return;
 
 	for (s = 0; s < config->aggr_map->nr; s++) {

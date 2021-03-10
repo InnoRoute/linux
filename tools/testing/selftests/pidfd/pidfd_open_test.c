@@ -6,6 +6,7 @@
 #include <inttypes.h>
 #include <limits.h>
 #include <linux/types.h>
+#include <linux/wait.h>
 #include <sched.h>
 #include <signal.h>
 #include <stdbool.h>

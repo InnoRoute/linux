@@ -1291,12 +1291,6 @@ static struct sk_buff *tls_wait_data(struct sock *sk, struct sk_psock *psock,
 			return NULL;
 		}
 
-		if (!skb_queue_empty(&sk->sk_receive_queue)) {
-			__strp_unpause(&ctx->strp);
-			if (ctx->recv_pkt)
-				return ctx->recv_pkt;
-		}
-
 		if (sk->sk_shutdown & RCV_SHUTDOWN)
 			return NULL;
 
@@ -1743,7 +1737,6 @@ int tls_sw_recvmsg(struct sock *sk,
 	long timeo;
 	bool is_kvec = iov_iter_is_kvec(&msg->msg_iter);
 	bool is_peek = flags & MSG_PEEK;
-	bool bpf_strp_enabled;
 	int num_async = 0;
 	int pending;
 
@@ -1754,7 +1747,6 @@ int tls_sw_recvmsg(struct sock *sk,
 
 	psock = sk_psock_get(sk);
 	lock_sock(sk);
-	bpf_strp_enabled = sk_psock_strp_enabled(psock);
 
 	/* Process pending decrypted records. It must be non-zero-copy */
 	err = process_rx_list(ctx, msg, &control, &cmsg, 0, len, false,
@@ -1808,12 +1800,11 @@ int tls_sw_recvmsg(struct sock *sk,
 
 		if (to_decrypt <= len && !is_kvec && !is_peek &&
 		    ctx->control == TLS_RECORD_TYPE_DATA &&
-		    prot->version != TLS_1_3_VERSION &&
-		    !bpf_strp_enabled)
+		    prot->version != TLS_1_3_VERSION)
 			zc = true;
 
 		/* Do not use async mode if record is non-data */
-		if (ctx->control == TLS_RECORD_TYPE_DATA && !bpf_strp_enabled)
+		if (ctx->control == TLS_RECORD_TYPE_DATA)
 			async_capable = ctx->async_capable;
 		else
 			async_capable = false;
@@ -1863,19 +1854,6 @@ int tls_sw_recvmsg(struct sock *sk,
 			goto pick_next_record;
 
 		if (!zc) {
-			if (bpf_strp_enabled) {
-				err = sk_psock_tls_strp_read(psock, skb);
-				if (err != __SK_PASS) {
-					rxm->offset = rxm->offset + rxm->full_len;
-					rxm->full_len = 0;
-					if (err == __SK_DROP)
-						consume_skb(skb);
-					ctx->recv_pkt = NULL;
-					__strp_unpause(&ctx->strp);
-					continue;
-				}
-			}
-
 			if (rxm->full_len > len) {
 				retain_skb = true;
 				chunk = len;
@@ -1913,7 +1891,7 @@ pick_next_record:
 			 * another message type
 			 */
 			msg->msg_flags |= MSG_EOR;
-			if (control != TLS_RECORD_TYPE_DATA)
+			if (ctx->control != TLS_RECORD_TYPE_DATA)
 				goto recv_end;
 		} else {
 			break;
@@ -2143,15 +2121,10 @@ void tls_sw_release_resources_tx(struct sock *sk)
 	struct tls_context *tls_ctx = tls_get_ctx(sk);
 	struct tls_sw_context_tx *ctx = tls_sw_ctx_tx(tls_ctx);
 	struct tls_rec *rec, *tmp;
-	int pending;
 
 	/* Wait for any pending async encryptions to complete */
-	spin_lock_bh(&ctx->encrypt_compl_lock);
-	ctx->async_notify = true;
-	pending = atomic_read(&ctx->encrypt_pending);
-	spin_unlock_bh(&ctx->encrypt_compl_lock);
-
-	if (pending)
+	smp_store_mb(ctx->async_notify, true);
+	if (atomic_read(&ctx->encrypt_pending))
 		crypto_wait_req(-EINPROGRESS, &ctx->async_wait);
 
 	tls_tx_records(sk, -1);

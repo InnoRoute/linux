@@ -57,11 +57,8 @@ static void get_default_min_max_freq(enum motionsensor_type type,
 {
 	switch (type) {
 	case MOTIONSENSE_TYPE_ACCEL:
-		*min_freq = 12500;
-		*max_freq = 100000;
-		break;
 	case MOTIONSENSE_TYPE_GYRO:
-		*min_freq = 25000;
+		*min_freq = 12500;
 		*max_freq = 100000;
 		break;
 	case MOTIONSENSE_TYPE_MAG:

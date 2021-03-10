@@ -41,7 +41,6 @@
 #define BCM2711_DMA_MEMCPY_CHAN 14
 
 struct bcm2835_dma_cfg_data {
-	u64	dma_mask;
 	u32	chan_40bit_mask;
 };
 
@@ -167,11 +166,6 @@ struct bcm2835_desc {
 #define BCM2835_DMA_PER_MAP(x)	((x & 31) << 16) /* REQ source */
 #define BCM2835_DMA_WAIT(x)	((x & 31) << 21) /* add DMA-wait cycles */
 #define BCM2835_DMA_NO_WIDE_BURSTS BIT(26) /* no 2 beat write bursts */
-
-/* A fake bit to request that the driver doesn't set the WAIT_RESP bit. */
-#define BCM2835_DMA_NO_WAIT_RESP BIT(27)
-#define WAIT_RESP(x) ((x & BCM2835_DMA_NO_WAIT_RESP) ? \
-		      0 : BCM2835_DMA_WAIT_RESP)
 
 /* debug register bits */
 #define BCM2835_DMA_DEBUG_LAST_NOT_SET_ERR	BIT(0)
@@ -303,12 +297,10 @@ DEFINE_SPINLOCK(memcpy_lock);
 
 static const struct bcm2835_dma_cfg_data bcm2835_dma_cfg = {
 	.chan_40bit_mask = 0,
-	.dma_mask = DMA_BIT_MASK(32),
 };
 
 static const struct bcm2835_dma_cfg_data bcm2711_dma_cfg = {
 	.chan_40bit_mask = BIT(11) | BIT(12) | BIT(13) | BIT(14),
-	.dma_mask = DMA_BIT_MASK(36),
 };
 
 static inline size_t bcm2835_dma_max_frame_length(struct bcm2835_chan *c)
@@ -853,7 +845,7 @@ static struct dma_async_tx_descriptor *bcm2835_dma_prep_dma_memcpy(
 	struct bcm2835_chan *c = to_bcm2835_dma_chan(chan);
 	struct bcm2835_desc *d;
 	u32 info = BCM2835_DMA_D_INC | BCM2835_DMA_S_INC;
-	u32 extra = BCM2835_DMA_INT_EN | WAIT_RESP(c->dreq);
+	u32 extra = BCM2835_DMA_INT_EN | BCM2835_DMA_WAIT_RESP;
 	size_t max_len = bcm2835_dma_max_frame_length(c);
 	size_t frames;
 
@@ -883,7 +875,7 @@ static struct dma_async_tx_descriptor *bcm2835_dma_prep_slave_sg(
 	struct bcm2835_chan *c = to_bcm2835_dma_chan(chan);
 	struct bcm2835_desc *d;
 	dma_addr_t src = 0, dst = 0;
-	u32 info = WAIT_RESP(c->dreq);
+	u32 info = BCM2835_DMA_WAIT_RESP;
 	u32 extra = BCM2835_DMA_INT_EN;
 	size_t frames;
 
@@ -945,7 +937,7 @@ static struct dma_async_tx_descriptor *bcm2835_dma_prep_dma_cyclic(
 	struct bcm2835_chan *c = to_bcm2835_dma_chan(chan);
 	struct bcm2835_desc *d;
 	dma_addr_t src, dst;
-	u32 info = WAIT_RESP(c->dreq);
+	u32 info = BCM2835_DMA_WAIT_RESP;
 	u32 extra = 0;
 	size_t max_len = bcm2835_dma_max_frame_length(c);
 	size_t frames;
@@ -1188,8 +1180,6 @@ static struct dma_chan *bcm2835_dma_xlate(struct of_phandle_args *spec,
 
 static int bcm2835_dma_probe(struct platform_device *pdev)
 {
-	const struct bcm2835_dma_cfg_data *cfg_data;
-	const struct of_device_id *of_id;
 	struct bcm2835_dmadev *od;
 	struct resource *res;
 	void __iomem *base;
@@ -1199,20 +1189,13 @@ static int bcm2835_dma_probe(struct platform_device *pdev)
 	int irq_flags;
 	uint32_t chans_available;
 	char chan_name[BCM2835_DMA_CHAN_NAME_SIZE];
+	const struct of_device_id *of_id;
 	int chan_count, chan_start, chan_end;
-
-	of_id = of_match_node(bcm2835_dma_of_match, pdev->dev.of_node);
-	if (!of_id) {
-		dev_err(&pdev->dev, "Failed to match compatible string\n");
-		return -EINVAL;
-	}
-
-	cfg_data = of_id->data;
 
 	if (!pdev->dev.dma_mask)
 		pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
 
-	rc = dma_set_mask_and_coherent(&pdev->dev, cfg_data->dma_mask);
+	rc = dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32));
 	if (rc) {
 		dev_err(&pdev->dev, "Unable to set DMA mask\n");
 		return rc;
@@ -1278,7 +1261,7 @@ static int bcm2835_dma_probe(struct platform_device *pdev)
 		return -EINVAL;
 	}
 
-	od->cfg_data = cfg_data;
+	od->cfg_data = of_id->data;
 
 	/* Request DMA channel mask from device tree */
 	if (of_property_read_u32(pdev->dev.of_node,

@@ -50,30 +50,16 @@ int rfi_flush_test(void)
 	__u64 l1d_misses_total = 0;
 	unsigned long iterations = 100000, zero_size = 24 * 1024;
 	unsigned long l1d_misses_expected;
-	int rfi_flush_orig, rfi_flush;
-	int have_entry_flush, entry_flush_orig;
+	int rfi_flush_org, rfi_flush;
 
 	SKIP_IF(geteuid() != 0);
 
-	if (read_debugfs_file("powerpc/rfi_flush", &rfi_flush_orig) < 0) {
+	if (read_debugfs_file("powerpc/rfi_flush", &rfi_flush_org)) {
 		perror("Unable to read powerpc/rfi_flush debugfs file");
 		SKIP_IF(1);
 	}
 
-	if (read_debugfs_file("powerpc/entry_flush", &entry_flush_orig) < 0) {
-		have_entry_flush = 0;
-	} else {
-		have_entry_flush = 1;
-
-		if (entry_flush_orig != 0) {
-			if (write_debugfs_file("powerpc/entry_flush", 0) < 0) {
-				perror("error writing to powerpc/entry_flush debugfs file");
-				return 1;
-			}
-		}
-	}
-
-	rfi_flush = rfi_flush_orig;
+	rfi_flush = rfi_flush_org;
 
 	fd = perf_event_open_counter(PERF_TYPE_RAW, /* L1d miss */ 0x400f0, -1);
 	FAIL_IF(fd < 0);
@@ -82,7 +68,6 @@ int rfi_flush_test(void)
 
 	FAIL_IF(perf_event_enable(fd));
 
-	// disable L1 prefetching
 	set_dscr(1);
 
 	iter = repetitions;
@@ -124,8 +109,8 @@ again:
 		       repetitions * l1d_misses_expected / 2,
 		       passes, repetitions);
 
-	if (rfi_flush == rfi_flush_orig) {
-		rfi_flush = !rfi_flush_orig;
+	if (rfi_flush == rfi_flush_org) {
+		rfi_flush = !rfi_flush_org;
 		if (write_debugfs_file("powerpc/rfi_flush", rfi_flush) < 0) {
 			perror("error writing to powerpc/rfi_flush debugfs file");
 			return 1;
@@ -141,17 +126,9 @@ again:
 
 	set_dscr(0);
 
-	if (write_debugfs_file("powerpc/rfi_flush", rfi_flush_orig) < 0) {
+	if (write_debugfs_file("powerpc/rfi_flush", rfi_flush_org) < 0) {
 		perror("unable to restore original value of powerpc/rfi_flush debugfs file");
 		return 1;
-	}
-
-	if (have_entry_flush) {
-		if (write_debugfs_file("powerpc/entry_flush", entry_flush_orig) < 0) {
-			perror("unable to restore original value of powerpc/entry_flush "
-			       "debugfs file");
-			return 1;
-		}
 	}
 
 	return rc;

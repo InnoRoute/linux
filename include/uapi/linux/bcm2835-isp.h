@@ -31,8 +31,6 @@
 				(V4L2_CID_USER_BCM2835_ISP_BASE + 0x0007)
 #define V4L2_CID_USER_BCM2835_ISP_DPC		\
 				(V4L2_CID_USER_BCM2835_ISP_BASE + 0x0008)
-#define V4L2_CID_USER_BCM2835_ISP_CDN \
-				(V4L2_CID_USER_BCM2835_ISP_BASE + 0x0009)
 
 /*
  * All structs below are directly mapped onto the equivalent structs in
@@ -48,7 +46,7 @@
  */
 struct bcm2835_isp_rational {
 	__s32 num;
-	__u32 den;
+	__s32 den;
 };
 
 /**
@@ -110,7 +108,7 @@ enum bcm2835_isp_gain_format {
  * @grid_stride:	Row to row distance (in grid cells) between grid cells
  *			in the same horizontal location.
  * @grid_height:	Height of lens shading tables in grid cells.
- * @dmabuf:		dmabuf file handle containing the table.
+ * @mem_handle_table:	Memory handle to the tables.
  * @ref_transform:	Reference transform - unsupported, please pass zero.
  * @corner_sampled:	Whether the gains are sampled at the corner points
  *			of the grid cells or in the cell centres.
@@ -122,7 +120,7 @@ struct bcm2835_isp_lens_shading {
 	__u32 grid_width;
 	__u32 grid_stride;
 	__u32 grid_height;
-	__s32 dmabuf;
+	__u32 mem_handle_table;
 	__u32 ref_transform;
 	__u32 corner_sampled;
 	__u32 gain_format;
@@ -142,7 +140,7 @@ struct bcm2835_isp_black_level {
 	__u16 black_level_r;
 	__u16 black_level_g;
 	__u16 black_level_b;
-	__u8 padding[2]; /* Unused */
+	__u8 pad_[2]; /* Unused */
 };
 
 /**
@@ -175,31 +173,6 @@ struct bcm2835_isp_gamma {
 	__u32 enabled;
 	__u16 x[BCM2835_NUM_GAMMA_PTS];
 	__u16 y[BCM2835_NUM_GAMMA_PTS];
-};
-
-/**
- * enum bcm2835_isp_cdn_mode - Mode of operation for colour denoise.
- *
- * @CDN_MODE_FAST:		Fast (but lower quality) colour denoise
- *				algorithm, typically used for video recording.
- * @CDN_HIGH_QUALITY:		High quality (but slower) colour denoise
- *				algorithm, typically used for stills capture.
- */
-enum bcm2835_isp_cdn_mode {
-	CDN_MODE_FAST = 0,
-	CDN_MODE_HIGH_QUALITY = 1,
-};
-
-/**
- * struct bcm2835_isp_cdn - Colour denoise parameters set with the
- *			    V4L2_CID_USER_BCM2835_ISP_CDN ctrl.
- *
- * @enabled:	Enable colour denoise.
- * @mode:	Colour denoise operating mode (see enum &bcm2835_isp_cdn_mode)
- */
-struct bcm2835_isp_cdn {
-	__u32 enabled;
-	__u32 mode;
 };
 
 /**

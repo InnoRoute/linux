@@ -900,8 +900,8 @@ static const struct imx477_mode supported_modes_12bit[] = {
 		.height = 3040,
 		.line_length_pix = 0x5dc0,
 		.crop = {
-			.left = IMX477_PIXEL_ARRAY_LEFT,
-			.top = IMX477_PIXEL_ARRAY_TOP,
+			.left = 0,
+			.top = 0,
 			.width = 4056,
 			.height = 3040,
 		},
@@ -924,8 +924,8 @@ static const struct imx477_mode supported_modes_12bit[] = {
 		.height = 1520,
 		.line_length_pix = 0x31c4,
 		.crop = {
-			.left = IMX477_PIXEL_ARRAY_LEFT,
-			.top = IMX477_PIXEL_ARRAY_TOP,
+			.left = 0,
+			.top = 0,
 			.width = 4056,
 			.height = 3040,
 		},
@@ -948,8 +948,8 @@ static const struct imx477_mode supported_modes_12bit[] = {
 		.height = 1080,
 		.line_length_pix = 0x31c4,
 		.crop = {
-			.left = IMX477_PIXEL_ARRAY_LEFT,
-			.top = IMX477_PIXEL_ARRAY_TOP + 440,
+			.left = 0,
+			.top = 440,
 			.width = 4056,
 			.height = 2600,
 		},
@@ -983,8 +983,8 @@ static const struct imx477_mode supported_modes_10bit[] = {
 			 * rectangle once the driver is expanded to represent
 			 * its processing blocks with multiple subdevs.
 			 */
-			.left = IMX477_PIXEL_ARRAY_LEFT + 4,
-			.top = IMX477_PIXEL_ARRAY_TOP,
+			.left = 4,
+			.top = 0,
 			.width = 4052,
 			.height = 3040,
 		},
@@ -1696,7 +1696,6 @@ static int imx477_get_selection(struct v4l2_subdev *sd,
 		return 0;
 
 	case V4L2_SEL_TGT_CROP_DEFAULT:
-	case V4L2_SEL_TGT_CROP_BOUNDS:
 		sel->r.left = IMX477_PIXEL_ARRAY_LEFT;
 		sel->r.top = IMX477_PIXEL_ARRAY_TOP;
 		sel->r.width = IMX477_PIXEL_ARRAY_WIDTH;
@@ -1958,12 +1957,11 @@ static int imx477_init_controls(struct imx477 *imx477)
 {
 	struct v4l2_ctrl_handler *ctrl_hdlr;
 	struct i2c_client *client = v4l2_get_subdevdata(&imx477->sd);
-	struct v4l2_fwnode_device_properties props;
 	unsigned int i;
 	int ret;
 
 	ctrl_hdlr = &imx477->ctrl_handler;
-	ret = v4l2_ctrl_handler_init(ctrl_hdlr, 16);
+	ret = v4l2_ctrl_handler_init(ctrl_hdlr, 14);
 	if (ret)
 		return ret;
 
@@ -2046,15 +2044,6 @@ static int imx477_init_controls(struct imx477 *imx477)
 			__func__, ret);
 		goto error;
 	}
-
-	ret = v4l2_fwnode_device_parse(&client->dev, &props);
-	if (ret)
-		goto error;
-
-	ret = v4l2_ctrl_new_fwnode_properties(ctrl_hdlr, &imx477_ctrl_ops,
-					      &props);
-	if (ret)
-		goto error;
 
 	imx477->sd.ctrl_handler = ctrl_hdlr;
 

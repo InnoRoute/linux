@@ -165,7 +165,6 @@ DECLARE_EVENT_CLASS(rpc_task_running,
 DEFINE_RPC_RUNNING_EVENT(begin);
 DEFINE_RPC_RUNNING_EVENT(run_action);
 DEFINE_RPC_RUNNING_EVENT(complete);
-DEFINE_RPC_RUNNING_EVENT(end);
 
 DECLARE_EVENT_CLASS(rpc_task_queued,
 
@@ -357,10 +356,10 @@ TRACE_EVENT(rpc_xdr_overflow,
 		__field(size_t, tail_len)
 		__field(unsigned int, page_len)
 		__field(unsigned int, len)
-		__string(progname, xdr->rqst ?
-			 xdr->rqst->rq_task->tk_client->cl_program->name : "unknown")
-		__string(procedure, xdr->rqst ?
-			 xdr->rqst->rq_task->tk_msg.rpc_proc->p_name : "unknown")
+		__string(progname,
+			 xdr->rqst->rq_task->tk_client->cl_program->name)
+		__string(procedure,
+			 xdr->rqst->rq_task->tk_msg.rpc_proc->p_name)
 	),
 
 	TP_fast_assign(

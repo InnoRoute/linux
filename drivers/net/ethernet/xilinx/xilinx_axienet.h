@@ -435,7 +435,7 @@ struct axienet_local {
 	void __iomem *regs;
 	void __iomem *dma_regs;
 
-	struct work_struct dma_err_task;
+	struct tasklet_struct dma_err_tasklet;
 
 	int tx_irq;
 	int rx_irq;

@@ -312,8 +312,8 @@ static int do_attach(int argc, char **argv)
 
 	ifindex = net_parse_dev(&argc, &argv);
 	if (ifindex < 1) {
-		err = -EINVAL;
-		goto cleanup;
+		close(progfd);
+		return -EINVAL;
 	}
 
 	if (argc) {
@@ -321,8 +321,8 @@ static int do_attach(int argc, char **argv)
 			overwrite = true;
 		} else {
 			p_err("expected 'overwrite', got: '%s'?", *argv);
-			err = -EINVAL;
-			goto cleanup;
+			close(progfd);
+			return -EINVAL;
 		}
 	}
 
@@ -330,17 +330,17 @@ static int do_attach(int argc, char **argv)
 	if (is_prefix("xdp", attach_type_strings[attach_type]))
 		err = do_attach_detach_xdp(progfd, attach_type, ifindex,
 					   overwrite);
-	if (err) {
+
+	if (err < 0) {
 		p_err("interface %s attach failed: %s",
 		      attach_type_strings[attach_type], strerror(-err));
-		goto cleanup;
+		return err;
 	}
 
 	if (json_output)
 		jsonw_null(json_wtr);
-cleanup:
-	close(progfd);
-	return err;
+
+	return 0;
 }
 
 static int do_detach(int argc, char **argv)

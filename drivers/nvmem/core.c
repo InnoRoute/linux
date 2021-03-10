@@ -130,14 +130,16 @@ static void nvmem_cell_add(struct nvmem_cell *cell)
 	blocking_notifier_call_chain(&nvmem_notifier, NVMEM_CELL_ADD, cell);
 }
 
-static int nvmem_cell_info_to_nvmem_cell_nodup(struct nvmem_device *nvmem,
-					const struct nvmem_cell_info *info,
-					struct nvmem_cell *cell)
+static int nvmem_cell_info_to_nvmem_cell(struct nvmem_device *nvmem,
+				   const struct nvmem_cell_info *info,
+				   struct nvmem_cell *cell)
 {
 	cell->nvmem = nvmem;
 	cell->offset = info->offset;
 	cell->bytes = info->bytes;
-	cell->name = info->name;
+	cell->name = kstrdup_const(info->name, GFP_KERNEL);
+	if (!cell->name)
+		return -ENOMEM;
 
 	cell->bit_offset = info->bit_offset;
 	cell->nbits = info->nbits;
@@ -149,26 +151,9 @@ static int nvmem_cell_info_to_nvmem_cell_nodup(struct nvmem_device *nvmem,
 	if (!IS_ALIGNED(cell->offset, nvmem->stride)) {
 		dev_err(&nvmem->dev,
 			"cell %s unaligned to nvmem stride %d\n",
-			cell->name ?: "<unknown>", nvmem->stride);
+			cell->name, nvmem->stride);
 		return -EINVAL;
 	}
-
-	return 0;
-}
-
-static int nvmem_cell_info_to_nvmem_cell(struct nvmem_device *nvmem,
-				const struct nvmem_cell_info *info,
-				struct nvmem_cell *cell)
-{
-	int err;
-
-	err = nvmem_cell_info_to_nvmem_cell_nodup(nvmem, info, cell);
-	if (err)
-		return err;
-
-	cell->name = kstrdup_const(info->name, GFP_KERNEL);
-	if (!cell->name)
-		return -ENOMEM;
 
 	return 0;
 }
@@ -1189,7 +1174,7 @@ ssize_t nvmem_device_cell_read(struct nvmem_device *nvmem,
 	if (!nvmem)
 		return -EINVAL;
 
-	rc = nvmem_cell_info_to_nvmem_cell_nodup(nvmem, info, &cell);
+	rc = nvmem_cell_info_to_nvmem_cell(nvmem, info, &cell);
 	if (rc)
 		return rc;
 
@@ -1219,7 +1204,7 @@ int nvmem_device_cell_write(struct nvmem_device *nvmem,
 	if (!nvmem)
 		return -EINVAL;
 
-	rc = nvmem_cell_info_to_nvmem_cell_nodup(nvmem, info, &cell);
+	rc = nvmem_cell_info_to_nvmem_cell(nvmem, info, &cell);
 	if (rc)
 		return rc;
 

@@ -85,9 +85,9 @@
 				fps = <20>;
 				bgr;
 				buswidth = <8>;
-				reset-gpios = <&gpio 25 1>;
+				reset-gpios = <&gpio 25 0>;
 				dc-gpios = <&gpio 24 0>;
-				led-gpios = <&gpio 18 0>;
+				led-gpios = <&gpio 18 1>;
 				debug = <0>;
 
 				init = <0x10000B0 0x80

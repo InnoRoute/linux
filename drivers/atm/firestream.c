@@ -998,7 +998,6 @@ static int fs_open(struct atm_vcc *atm_vcc)
 				error = make_rate (pcr, r, &tmc0, NULL);
 				if (error) {
 					kfree(tc);
-					kfree(vcc);
 					return error;
 				}
 			}

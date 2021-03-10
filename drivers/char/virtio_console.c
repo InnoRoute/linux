@@ -435,12 +435,12 @@ static struct port_buffer *alloc_buf(struct virtio_device *vdev, size_t buf_size
 		/*
 		 * Allocate DMA memory from ancestor. When a virtio
 		 * device is created by remoteproc, the DMA memory is
-		 * associated with the parent device:
-		 * virtioY => remoteprocX#vdevYbuffer.
+		 * associated with the grandparent device:
+		 * vdev => rproc => platform-dev.
 		 */
-		buf->dev = vdev->dev.parent;
-		if (!buf->dev)
+		if (!vdev->dev.parent || !vdev->dev.parent->parent)
 			goto free_buf;
+		buf->dev = vdev->dev.parent->parent;
 
 		/* Increase device refcnt to avoid freeing it */
 		get_device(buf->dev);
@@ -2118,7 +2118,6 @@ static struct virtio_device_id id_table[] = {
 	{ VIRTIO_ID_CONSOLE, VIRTIO_DEV_ANY_ID },
 	{ 0 },
 };
-MODULE_DEVICE_TABLE(virtio, id_table);
 
 static unsigned int features[] = {
 	VIRTIO_CONSOLE_F_SIZE,
@@ -2131,7 +2130,6 @@ static struct virtio_device_id rproc_serial_id_table[] = {
 #endif
 	{ 0 },
 };
-MODULE_DEVICE_TABLE(virtio, rproc_serial_id_table);
 
 static unsigned int rproc_serial_features[] = {
 };
@@ -2284,5 +2282,6 @@ static void __exit fini(void)
 module_init(init);
 module_exit(fini);
 
+MODULE_DEVICE_TABLE(virtio, id_table);
 MODULE_DESCRIPTION("Virtio console driver");
 MODULE_LICENSE("GPL");

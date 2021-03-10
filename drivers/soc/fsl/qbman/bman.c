@@ -660,7 +660,7 @@ int bm_shutdown_pool(u32 bpid)
 	}
 done:
 	put_affine_portal();
-	return err;
+	return 0;
 }
 
 struct gen_pool *bm_bpalloc;

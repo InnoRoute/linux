@@ -381,12 +381,6 @@ static int q6v5_load(struct rproc *rproc, const struct firmware *fw)
 {
 	struct q6v5 *qproc = rproc->priv;
 
-	/* MBA is restricted to a maximum size of 1M */
-	if (fw->size > qproc->mba_size || fw->size > SZ_1M) {
-		dev_err(qproc->dev, "MBA firmware load failed\n");
-		return -EINVAL;
-	}
-
 	memcpy(qproc->mba_region, fw->data, fw->size);
 
 	return 0;
@@ -1011,13 +1005,7 @@ static int q6v5_mpss_load(struct q6v5 *qproc)
 			goto release_firmware;
 		}
 
-		ptr = ioremap_wc(qproc->mpss_phys + offset, phdr->p_memsz);
-		if (!ptr) {
-			dev_err(qproc->dev,
-				"unable to map memory region: %pa+%zx-%x\n",
-				&qproc->mpss_phys, offset, phdr->p_memsz);
-			goto release_firmware;
-		}
+		ptr = qproc->mpss_region + offset;
 
 		if (phdr->p_filesz && phdr->p_offset < fw->size) {
 			/* Firmware is large enough to be non-split */
@@ -1026,7 +1014,6 @@ static int q6v5_mpss_load(struct q6v5 *qproc)
 					"failed to load segment %d from truncated file %s\n",
 					i, fw_name);
 				ret = -EINVAL;
-				iounmap(ptr);
 				goto release_firmware;
 			}
 
@@ -1034,13 +1021,13 @@ static int q6v5_mpss_load(struct q6v5 *qproc)
 		} else if (phdr->p_filesz) {
 			/* Replace "xxx.xxx" with "xxx.bxx" */
 			sprintf(fw_name + fw_name_len - 3, "b%02d", i);
-			ret = request_firmware_into_buf(&seg_fw, fw_name, qproc->dev,
-							ptr, phdr->p_filesz);
+			ret = request_firmware(&seg_fw, fw_name, qproc->dev);
 			if (ret) {
 				dev_err(qproc->dev, "failed to load %s\n", fw_name);
-				iounmap(ptr);
 				goto release_firmware;
 			}
+
+			memcpy(ptr, seg_fw->data, seg_fw->size);
 
 			release_firmware(seg_fw);
 		}
@@ -1049,7 +1036,6 @@ static int q6v5_mpss_load(struct q6v5 *qproc)
 			memset(ptr + phdr->p_filesz, 0,
 			       phdr->p_memsz - phdr->p_filesz);
 		}
-		iounmap(ptr);
 		size += phdr->p_memsz;
 	}
 
@@ -1089,8 +1075,7 @@ static void qcom_q6v5_dump_segment(struct rproc *rproc,
 	int ret = 0;
 	struct q6v5 *qproc = rproc->priv;
 	unsigned long mask = BIT((unsigned long)segment->priv);
-	int offset = segment->da - qproc->mpss_reloc;
-	void *ptr = NULL;
+	void *ptr = rproc_da_to_va(rproc, segment->da, segment->size);
 
 	/* Unlock mba before copying segments */
 	if (!qproc->dump_mba_loaded) {
@@ -1104,15 +1089,10 @@ static void qcom_q6v5_dump_segment(struct rproc *rproc,
 		}
 	}
 
-	if (!ret)
-		ptr = ioremap_wc(qproc->mpss_phys + offset, segment->size);
-
-	if (ptr) {
-		memcpy(dest, ptr, segment->size);
-		iounmap(ptr);
-	} else {
+	if (!ptr || ret)
 		memset(dest, 0xff, segment->size);
-	}
+	else
+		memcpy(dest, ptr, segment->size);
 
 	qproc->dump_segment_mask |= mask;
 
@@ -1413,6 +1393,12 @@ static int q6v5_alloc_memory_region(struct q6v5 *qproc)
 
 	qproc->mpss_phys = qproc->mpss_reloc = r.start;
 	qproc->mpss_size = resource_size(&r);
+	qproc->mpss_region = devm_ioremap_wc(qproc->dev, qproc->mpss_phys, qproc->mpss_size);
+	if (!qproc->mpss_region) {
+		dev_err(qproc->dev, "unable to map memory region: %pa+%zx\n",
+			&r.start, qproc->mpss_size);
+		return -EBUSY;
+	}
 
 	return 0;
 }

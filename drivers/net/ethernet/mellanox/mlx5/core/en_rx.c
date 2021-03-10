@@ -1428,7 +1428,6 @@ out:
 
 #ifdef CONFIG_MLX5_CORE_IPOIB
 
-#define MLX5_IB_GRH_SGID_OFFSET 8
 #define MLX5_IB_GRH_DGID_OFFSET 24
 #define MLX5_GID_SIZE           16
 
@@ -1442,7 +1441,6 @@ static inline void mlx5i_complete_rx_cqe(struct mlx5e_rq *rq,
 	struct net_device *netdev;
 	struct mlx5e_priv *priv;
 	char *pseudo_header;
-	u32 flags_rqpn;
 	u32 qpn;
 	u8 *dgid;
 	u8 g;
@@ -1464,8 +1462,7 @@ static inline void mlx5i_complete_rx_cqe(struct mlx5e_rq *rq,
 	tstamp = &priv->tstamp;
 	stats = &priv->channel_stats[rq->ix].rq;
 
-	flags_rqpn = be32_to_cpu(cqe->flags_rqpn);
-	g = (flags_rqpn >> 28) & 3;
+	g = (be32_to_cpu(cqe->flags_rqpn) >> 28) & 3;
 	dgid = skb->data + MLX5_IB_GRH_DGID_OFFSET;
 	if ((!g) || dgid[0] != 0xff)
 		skb->pkt_type = PACKET_HOST;
@@ -1474,15 +1471,9 @@ static inline void mlx5i_complete_rx_cqe(struct mlx5e_rq *rq,
 	else
 		skb->pkt_type = PACKET_MULTICAST;
 
-	/* Drop packets that this interface sent, ie multicast packets
-	 * that the HCA has replicated.
+	/* TODO: IB/ipoib: Allow mcast packets from other VFs
+	 * 68996a6e760e5c74654723eeb57bf65628ae87f4
 	 */
-	if (g && (qpn == (flags_rqpn & 0xffffff)) &&
-	    (memcmp(netdev->dev_addr + 4, skb->data + MLX5_IB_GRH_SGID_OFFSET,
-		    MLX5_GID_SIZE) == 0)) {
-		skb->dev = NULL;
-		return;
-	}
 
 	skb_pull(skb, MLX5_IB_GRH_BYTES);
 

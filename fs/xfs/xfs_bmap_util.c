@@ -1039,7 +1039,6 @@ out_trans_cancel:
 	goto out_unlock;
 }
 
-/* Caller must first wait for the completion of any pending DIOs if required. */
 int
 xfs_flush_unmap_range(
 	struct xfs_inode	*ip,
@@ -1050,6 +1049,9 @@ xfs_flush_unmap_range(
 	struct inode		*inode = VFS_I(ip);
 	xfs_off_t		rounding, start, end;
 	int			error;
+
+	/* wait for the completion of any pending DIOs */
+	inode_dio_wait(inode);
 
 	rounding = max_t(xfs_off_t, 1 << mp->m_sb.sb_blocklog, PAGE_SIZE);
 	start = round_down(offset, rounding);
@@ -1081,6 +1083,10 @@ xfs_free_file_space(
 
 	if (len <= 0)	/* if nothing being freed */
 		return 0;
+
+	error = xfs_flush_unmap_range(ip, offset, len);
+	if (error)
+		return error;
 
 	startoffset_fsb = XFS_B_TO_FSB(mp, offset);
 	endoffset_fsb = XFS_B_TO_FSBT(mp, offset + len);
@@ -1754,7 +1760,7 @@ xfs_swap_extents(
 	if (xfs_inode_has_cow_data(tip)) {
 		error = xfs_reflink_cancel_cow_range(tip, 0, NULLFILEOFF, true);
 		if (error)
-			goto out_unlock;
+			return error;
 	}
 
 	/*

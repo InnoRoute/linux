@@ -135,10 +135,10 @@ vmlinux.gz: vmlinux
 ifndef CONFIG_KGDB
 	cp vmlinux vmlinux.tmp
 	$(STRIP) vmlinux.tmp
-	$(KGZIP) -9c vmlinux.tmp >vmlinux.gz
+	gzip -9c vmlinux.tmp >vmlinux.gz
 	rm vmlinux.tmp
 else
-	$(KGZIP) -9c vmlinux >vmlinux.gz
+	gzip -9c vmlinux >vmlinux.gz
 endif
 
 bzImage: vmlinux.bz2
@@ -148,10 +148,10 @@ vmlinux.bz2: vmlinux
 ifndef CONFIG_KGDB
 	cp vmlinux vmlinux.tmp
 	$(STRIP) vmlinux.tmp
-	$(KBZIP2) -1c vmlinux.tmp >vmlinux.bz2
+	bzip2 -1c vmlinux.tmp >vmlinux.bz2
 	rm vmlinux.tmp
 else
-	$(KBZIP2) -1c vmlinux >vmlinux.bz2
+	bzip2 -1c vmlinux >vmlinux.bz2
 endif
 
 archclean:

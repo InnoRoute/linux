@@ -855,20 +855,13 @@ int blkg_conf_prep(struct blkcg *blkcg, const struct blkcg_policy *pol,
 			goto fail;
 		}
 
-		if (radix_tree_preload(GFP_KERNEL)) {
-			blkg_free(new_blkg);
-			ret = -ENOMEM;
-			goto fail;
-		}
-
 		rcu_read_lock();
 		spin_lock_irq(&q->queue_lock);
 
 		blkg = blkg_lookup_check(pos, pol, q);
 		if (IS_ERR(blkg)) {
 			ret = PTR_ERR(blkg);
-			blkg_free(new_blkg);
-			goto fail_preloaded;
+			goto fail_unlock;
 		}
 
 		if (blkg) {
@@ -877,11 +870,9 @@ int blkg_conf_prep(struct blkcg *blkcg, const struct blkcg_policy *pol,
 			blkg = blkg_create(pos, q, new_blkg);
 			if (IS_ERR(blkg)) {
 				ret = PTR_ERR(blkg);
-				goto fail_preloaded;
+				goto fail_unlock;
 			}
 		}
-
-		radix_tree_preload_end();
 
 		if (pos == blkcg)
 			goto success;
@@ -892,8 +883,6 @@ success:
 	ctx->body = input;
 	return 0;
 
-fail_preloaded:
-	radix_tree_preload_end();
 fail_unlock:
 	spin_unlock_irq(&q->queue_lock);
 	rcu_read_unlock();
@@ -1230,15 +1219,13 @@ int blkcg_init_queue(struct request_queue *q)
 	if (preloaded)
 		radix_tree_preload_end();
 
-	ret = blk_throtl_init(q);
+	ret = blk_iolatency_init(q);
 	if (ret)
 		goto err_destroy_all;
 
-	ret = blk_iolatency_init(q);
-	if (ret) {
-		blk_throtl_exit(q);
+	ret = blk_throtl_init(q);
+	if (ret)
 		goto err_destroy_all;
-	}
 	return 0;
 
 err_destroy_all:

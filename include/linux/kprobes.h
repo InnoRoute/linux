@@ -350,10 +350,6 @@ static inline struct kprobe_ctlblk *get_kprobe_ctlblk(void)
 	return this_cpu_ptr(&kprobe_ctlblk);
 }
 
-extern struct kprobe kprobe_busy;
-void kprobe_busy_begin(void);
-void kprobe_busy_end(void);
-
 kprobe_opcode_t *kprobe_lookup_name(const char *name, unsigned int offset);
 int register_kprobe(struct kprobe *p);
 void unregister_kprobe(struct kprobe *p);
@@ -368,8 +364,6 @@ void unregister_kretprobes(struct kretprobe **rps, int num);
 
 void kprobe_flush_task(struct task_struct *tk);
 void recycle_rp_inst(struct kretprobe_instance *ri, struct hlist_head *head);
-
-void kprobe_free_init_mem(void);
 
 int disable_kprobe(struct kprobe *kp);
 int enable_kprobe(struct kprobe *kp);
@@ -426,9 +420,6 @@ static inline void unregister_kretprobes(struct kretprobe **rps, int num)
 {
 }
 static inline void kprobe_flush_task(struct task_struct *tk)
-{
-}
-static inline void kprobe_free_init_mem(void)
 {
 }
 static inline int disable_kprobe(struct kprobe *kp)

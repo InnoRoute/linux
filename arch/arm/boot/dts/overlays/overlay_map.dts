@@ -61,18 +61,6 @@
 		deprecated = "use sdio,bus_width=1,gpios_22_25";
 	};
 
-	sdtweak {
-		deprecated = "use 'dtparam=sd_poll_once' etc.";
-	};
-
-	spi0-cs {
-		renamed = "spi0-2cs";
-	};
-
-	spi0-hw-cs {
-		deprecated = "no longer necessary";
-	};
-
 	spi3-1cs {
 		bcm2711;
 	};

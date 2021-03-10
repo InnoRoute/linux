@@ -559,7 +559,6 @@ __iomap_write_begin(struct inode *inode, loff_t pos, unsigned len,
 
 	if (PageUptodate(page))
 		return 0;
-	ClearPageError(page);
 
 	do {
 		iomap_adjust_read_range(inode, iop, &block_start,
@@ -1041,19 +1040,20 @@ vm_fault_t iomap_page_mkwrite(struct vm_fault *vmf, const struct iomap_ops *ops)
 
 	lock_page(page);
 	size = i_size_read(inode);
-	offset = page_offset(page);
-	if (page->mapping != inode->i_mapping || offset > size) {
+	if ((page->mapping != inode->i_mapping) ||
+	    (page_offset(page) > size)) {
 		/* We overload EFAULT to mean page got truncated */
 		ret = -EFAULT;
 		goto out_unlock;
 	}
 
 	/* page is wholly or partially inside EOF */
-	if (offset > size - PAGE_SIZE)
+	if (((page->index + 1) << PAGE_SHIFT) > size)
 		length = offset_in_page(size);
 	else
 		length = PAGE_SIZE;
 
+	offset = page_offset(page);
 	while (length > 0) {
 		ret = iomap_apply(inode, offset, length,
 				IOMAP_WRITE | IOMAP_FAULT, ops, page,

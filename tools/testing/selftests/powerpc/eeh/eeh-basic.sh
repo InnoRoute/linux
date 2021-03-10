@@ -1,19 +1,17 @@
 #!/bin/sh
 # SPDX-License-Identifier: GPL-2.0-only
 
-KSELFTESTS_SKIP=4
-
 . ./eeh-functions.sh
 
 if ! eeh_supported ; then
 	echo "EEH not supported on this system, skipping"
-	exit $KSELFTESTS_SKIP;
+	exit 0;
 fi
 
 if [ ! -e "/sys/kernel/debug/powerpc/eeh_dev_check" ] && \
    [ ! -e "/sys/kernel/debug/powerpc/eeh_dev_break" ] ; then
 	echo "debugfs EEH testing files are missing. Is debugfs mounted?"
-	exit $KSELFTESTS_SKIP;
+	exit 1;
 fi
 
 pre_lspci=`mktemp`
@@ -81,5 +79,4 @@ echo "$failed devices failed to recover ($dev_count tested)"
 lspci | diff -u $pre_lspci -
 rm -f $pre_lspci
 
-test "$failed" == 0
-exit $?
+exit $failed

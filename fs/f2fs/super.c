@@ -277,22 +277,6 @@ static inline void limit_reserve_root(struct f2fs_sb_info *sbi)
 					   F2FS_OPTION(sbi).s_resgid));
 }
 
-static inline void adjust_unusable_cap_perc(struct f2fs_sb_info *sbi)
-{
-	if (!F2FS_OPTION(sbi).unusable_cap_perc)
-		return;
-
-	if (F2FS_OPTION(sbi).unusable_cap_perc == 100)
-		F2FS_OPTION(sbi).unusable_cap = sbi->user_block_count;
-	else
-		F2FS_OPTION(sbi).unusable_cap = (sbi->user_block_count / 100) *
-					F2FS_OPTION(sbi).unusable_cap_perc;
-
-	f2fs_info(sbi, "Adjust unusable cap for checkpoint=disable = %u / %u%%",
-			F2FS_OPTION(sbi).unusable_cap,
-			F2FS_OPTION(sbi).unusable_cap_perc);
-}
-
 static void init_once(void *foo)
 {
 	struct f2fs_inode_info *fi = (struct f2fs_inode_info *) foo;
@@ -806,7 +790,12 @@ static int parse_options(struct super_block *sb, char *options)
 				return -EINVAL;
 			if (arg < 0 || arg > 100)
 				return -EINVAL;
-			F2FS_OPTION(sbi).unusable_cap_perc = arg;
+			if (arg == 100)
+				F2FS_OPTION(sbi).unusable_cap =
+					sbi->user_block_count;
+			else
+				F2FS_OPTION(sbi).unusable_cap =
+					(sbi->user_block_count / 100) *	arg;
 			set_opt(sbi, DISABLE_CHECKPOINT);
 			break;
 		case Opt_checkpoint_disable_cap:
@@ -1075,9 +1064,6 @@ static void f2fs_put_super(struct super_block *sb)
 	int i;
 	bool dropped;
 
-	/* unregister procfs/sysfs entries in advance to avoid race case */
-	f2fs_unregister_sysfs(sbi);
-
 	f2fs_quota_off_umount(sb);
 
 	/* prevent remaining shrinker jobs */
@@ -1140,6 +1126,8 @@ static void f2fs_put_super(struct super_block *sb)
 	f2fs_destroy_segment_manager(sbi);
 
 	kvfree(sbi->ckpt);
+
+	f2fs_unregister_sysfs(sbi);
 
 	sb->s_fs_info = NULL;
 	if (sbi->s_chksum_driver)
@@ -1231,8 +1219,7 @@ static int f2fs_statfs_project(struct super_block *sb,
 		limit >>= sb->s_blocksize_bits;
 
 	if (limit && buf->f_blocks > limit) {
-		curblock = (dquot->dq_dqb.dqb_curspace +
-			    dquot->dq_dqb.dqb_rsvspace) >> sb->s_blocksize_bits;
+		curblock = dquot->dq_dqb.dqb_curspace >> sb->s_blocksize_bits;
 		buf->f_blocks = limit;
 		buf->f_bfree = buf->f_bavail =
 			(buf->f_blocks > curblock) ?
@@ -1748,7 +1735,6 @@ skip:
 		(test_opt(sbi, POSIX_ACL) ? SB_POSIXACL : 0);
 
 	limit_reserve_root(sbi);
-	adjust_unusable_cap_perc(sbi);
 	*flags = (*flags & ~SB_LAZYTIME) | (sb->s_flags & SB_LAZYTIME);
 	return 0;
 restore_gc:
@@ -2902,7 +2888,7 @@ static int init_blkz_info(struct f2fs_sb_info *sbi, int devi)
 	if (nr_sectors & (bdev_zone_sectors(bdev) - 1))
 		FDEV(devi).nr_blkz++;
 
-	FDEV(devi).blkz_seq = f2fs_kvzalloc(sbi,
+	FDEV(devi).blkz_seq = f2fs_kzalloc(sbi,
 					BITS_TO_LONGS(FDEV(devi).nr_blkz)
 					* sizeof(unsigned long),
 					GFP_KERNEL);
@@ -3411,7 +3397,6 @@ try_onemore:
 	sbi->reserved_blocks = 0;
 	sbi->current_reserved_blocks = 0;
 	limit_reserve_root(sbi);
-	adjust_unusable_cap_perc(sbi);
 
 	for (i = 0; i < NR_INODE_TYPE; i++) {
 		INIT_LIST_HEAD(&sbi->inode_list[i]);

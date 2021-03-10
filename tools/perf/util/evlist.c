@@ -976,10 +976,6 @@ int perf_evlist__create_maps(struct evlist *evlist, struct target *target)
 
 	perf_evlist__set_maps(&evlist->core, cpus, threads);
 
-	/* as evlist now has references, put count here */
-	perf_cpu_map__put(cpus);
-	perf_thread_map__put(threads);
-
 	return 0;
 
 out_delete_threads:
@@ -1234,12 +1230,11 @@ static int perf_evlist__create_syswide_maps(struct evlist *evlist)
 		goto out_put;
 
 	perf_evlist__set_maps(&evlist->core, cpus, threads);
-
-	perf_thread_map__put(threads);
-out_put:
-	perf_cpu_map__put(cpus);
 out:
 	return err;
+out_put:
+	perf_cpu_map__put(cpus);
+	goto out;
 }
 
 int evlist__open(struct evlist *evlist)

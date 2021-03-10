@@ -129,7 +129,6 @@ struct sh_mobile_i2c_data {
 	int sr;
 	bool send_stop;
 	bool stop_after_dma;
-	bool atomic_xfer;
 
 	struct resource *res;
 	struct dma_chan *dma_tx;
@@ -334,15 +333,13 @@ static unsigned char i2c_op(struct sh_mobile_i2c_data *pd, enum sh_mobile_i2c_op
 		ret = iic_rd(pd, ICDR);
 		break;
 	case OP_RX_STOP: /* enable DTE interrupt, issue stop */
-		if (!pd->atomic_xfer)
-			iic_wr(pd, ICIC,
-			       ICIC_DTEE | ICIC_WAITE | ICIC_ALE | ICIC_TACKE);
+		iic_wr(pd, ICIC,
+		       ICIC_DTEE | ICIC_WAITE | ICIC_ALE | ICIC_TACKE);
 		iic_wr(pd, ICCR, ICCR_ICE | ICCR_RACK);
 		break;
 	case OP_RX_STOP_DATA: /* enable DTE interrupt, read data, issue stop */
-		if (!pd->atomic_xfer)
-			iic_wr(pd, ICIC,
-			       ICIC_DTEE | ICIC_WAITE | ICIC_ALE | ICIC_TACKE);
+		iic_wr(pd, ICIC,
+		       ICIC_DTEE | ICIC_WAITE | ICIC_ALE | ICIC_TACKE);
 		ret = iic_rd(pd, ICDR);
 		iic_wr(pd, ICCR, ICCR_ICE | ICCR_RACK);
 		break;
@@ -438,8 +435,7 @@ static irqreturn_t sh_mobile_i2c_isr(int irq, void *dev_id)
 
 	if (wakeup) {
 		pd->sr |= SW_DONE;
-		if (!pd->atomic_xfer)
-			wake_up(&pd->wait);
+		wake_up(&pd->wait);
 	}
 
 	/* defeat write posting to avoid spurious WAIT interrupts */
@@ -591,9 +587,6 @@ static void start_ch(struct sh_mobile_i2c_data *pd, struct i2c_msg *usr_msg,
 	pd->pos = -1;
 	pd->sr = 0;
 
-	if (pd->atomic_xfer)
-		return;
-
 	pd->dma_buf = i2c_get_dma_safe_msg_buf(pd->msg, 8);
 	if (pd->dma_buf)
 		sh_mobile_i2c_xfer_dma(pd);
@@ -650,13 +643,15 @@ static int poll_busy(struct sh_mobile_i2c_data *pd)
 	return i ? 0 : -ETIMEDOUT;
 }
 
-static int sh_mobile_xfer(struct sh_mobile_i2c_data *pd,
-			 struct i2c_msg *msgs, int num)
+static int sh_mobile_i2c_xfer(struct i2c_adapter *adapter,
+			      struct i2c_msg *msgs,
+			      int num)
 {
+	struct sh_mobile_i2c_data *pd = i2c_get_adapdata(adapter);
 	struct i2c_msg	*msg;
 	int err = 0;
 	int i;
-	long time_left;
+	long timeout;
 
 	/* Wake up device and enable clock */
 	pm_runtime_get_sync(pd->dev);
@@ -673,35 +668,15 @@ static int sh_mobile_xfer(struct sh_mobile_i2c_data *pd,
 		if (do_start)
 			i2c_op(pd, OP_START);
 
-		if (pd->atomic_xfer) {
-			unsigned long j = jiffies + pd->adap.timeout;
+		/* The interrupt handler takes care of the rest... */
+		timeout = wait_event_timeout(pd->wait,
+				       pd->sr & (ICSR_TACK | SW_DONE),
+				       adapter->timeout);
 
-			time_left = time_before_eq(jiffies, j);
-			while (time_left &&
-			       !(pd->sr & (ICSR_TACK | SW_DONE))) {
-				unsigned char sr = iic_rd(pd, ICSR);
+		/* 'stop_after_dma' tells if DMA transfer was complete */
+		i2c_put_dma_safe_msg_buf(pd->dma_buf, pd->msg, pd->stop_after_dma);
 
-				if (sr & (ICSR_AL   | ICSR_TACK |
-					  ICSR_WAIT | ICSR_DTE)) {
-					sh_mobile_i2c_isr(0, pd);
-					udelay(150);
-				} else {
-					cpu_relax();
-				}
-				time_left = time_before_eq(jiffies, j);
-			}
-		} else {
-			/* The interrupt handler takes care of the rest... */
-			time_left = wait_event_timeout(pd->wait,
-					pd->sr & (ICSR_TACK | SW_DONE),
-					pd->adap.timeout);
-
-			/* 'stop_after_dma' tells if DMA xfer was complete */
-			i2c_put_dma_safe_msg_buf(pd->dma_buf, pd->msg,
-						 pd->stop_after_dma);
-		}
-
-		if (!time_left) {
+		if (!timeout) {
 			dev_err(pd->dev, "Transfer request timed out\n");
 			if (pd->dma_direction != DMA_NONE)
 				sh_mobile_i2c_cleanup_dma(pd);
@@ -727,35 +702,14 @@ static int sh_mobile_xfer(struct sh_mobile_i2c_data *pd,
 	return err ?: num;
 }
 
-static int sh_mobile_i2c_xfer(struct i2c_adapter *adapter,
-			      struct i2c_msg *msgs,
-			      int num)
-{
-	struct sh_mobile_i2c_data *pd = i2c_get_adapdata(adapter);
-
-	pd->atomic_xfer = false;
-	return sh_mobile_xfer(pd, msgs, num);
-}
-
-static int sh_mobile_i2c_xfer_atomic(struct i2c_adapter *adapter,
-				     struct i2c_msg *msgs,
-				     int num)
-{
-	struct sh_mobile_i2c_data *pd = i2c_get_adapdata(adapter);
-
-	pd->atomic_xfer = true;
-	return sh_mobile_xfer(pd, msgs, num);
-}
-
 static u32 sh_mobile_i2c_func(struct i2c_adapter *adapter)
 {
 	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL | I2C_FUNC_PROTOCOL_MANGLING;
 }
 
 static const struct i2c_algorithm sh_mobile_i2c_algorithm = {
-	.functionality = sh_mobile_i2c_func,
-	.master_xfer = sh_mobile_i2c_xfer,
-	.master_xfer_atomic = sh_mobile_i2c_xfer_atomic,
+	.functionality	= sh_mobile_i2c_func,
+	.master_xfer	= sh_mobile_i2c_xfer,
 };
 
 static const struct i2c_adapter_quirks sh_mobile_i2c_quirks = {

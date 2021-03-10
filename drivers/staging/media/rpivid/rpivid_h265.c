@@ -1341,10 +1341,10 @@ static int frame_end(struct rpivid_dev *const dev,
 
 		if (gptr_realloc_new(dev, de->cmd_copy_gptr, cmd_alloc)) {
 			v4l2_err(&dev->v4l2_dev,
-				 "Alloc cmd buffer (%zu): FAILED\n", cmd_alloc);
+				 "Alloc cmd buffer (%d): FAILED\n", cmd_alloc);
 			return -ENOMEM;
 		}
-		v4l2_info(&dev->v4l2_dev, "Alloc cmd buffer (%zu): OK\n",
+		v4l2_info(&dev->v4l2_dev, "Alloc cmd buffer (%d): OK\n",
 			  cmd_alloc);
 	}
 
@@ -1696,12 +1696,12 @@ static void rpivid_h265_setup(struct rpivid_ctx *ctx, struct rpivid_run *run)
 				       bits_alloc,
 				       DMA_ATTR_FORCE_CONTIGUOUS) != 0) {
 				v4l2_err(&dev->v4l2_dev,
-					 "Unable to alloc buf (%zu) for bit copy\n",
+					 "Unable to alloc buf (%d) for bit copy\n",
 					 bits_alloc);
 				goto fail;
 			}
 			v4l2_info(&dev->v4l2_dev,
-				  "Alloc buf (%zu) for bit copy OK\n",
+				  "Alloc buf (%d) for bit copy OK\n",
 				  bits_alloc);
 		}
 	}
@@ -1995,11 +1995,11 @@ static void phase1_thread(struct rpivid_dev *const dev, void *v)
 	if (de->p1_status & STATUS_PU_EXHAUSTED) {
 		if (gptr_realloc_new(dev, pu_gptr, next_size(pu_gptr->size))) {
 			v4l2_err(&dev->v4l2_dev,
-				 "%s: PU realloc (%zx) failed\n",
+				 "%s: PU realloc (%#x) failed\n",
 				 __func__, pu_gptr->size);
 			goto fail;
 		}
-		v4l2_info(&dev->v4l2_dev, "%s: PU realloc (%zx) OK\n",
+		v4l2_info(&dev->v4l2_dev, "%s: PU realloc (%#x) OK\n",
 			  __func__, pu_gptr->size);
 	}
 
@@ -2007,11 +2007,11 @@ static void phase1_thread(struct rpivid_dev *const dev, void *v)
 		if (gptr_realloc_new(dev, coeff_gptr,
 				     next_size(coeff_gptr->size))) {
 			v4l2_err(&dev->v4l2_dev,
-				 "%s: Coeff realloc (%zx) failed\n",
+				 "%s: Coeff realloc (%#x) failed\n",
 				 __func__, coeff_gptr->size);
 			goto fail;
 		}
-		v4l2_info(&dev->v4l2_dev, "%s: Coeff realloc (%zx) OK\n",
+		v4l2_info(&dev->v4l2_dev, "%s: Coeff realloc (%#x) OK\n",
 			  __func__, coeff_gptr->size);
 	}
 
@@ -2178,7 +2178,7 @@ static int rpivid_h265_start(struct rpivid_ctx *ctx)
 	if (w > 4096)
 		w = 4096;
 	if (h == 0)
-		h = 1088;
+		w = 1088;
 	if (h > 4096)
 		h = 4096;
 	wxh = w * h;

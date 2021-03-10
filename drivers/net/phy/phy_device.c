@@ -615,9 +615,7 @@ struct phy_device *phy_device_create(struct mii_bus *bus, int addr, u32 phy_id,
 	if (c45_ids)
 		dev->c45_ids = *c45_ids;
 	dev->irq = bus->irq[addr];
-
 	dev_set_name(&mdiodev->dev, PHY_ID_FMT, bus->id, addr);
-	device_initialize(&mdiodev->dev);
 
 	dev->state = PHY_DOWN;
 
@@ -651,8 +649,10 @@ struct phy_device *phy_device_create(struct mii_bus *bus, int addr, u32 phy_id,
 		ret = phy_request_driver_module(dev, phy_id);
 	}
 
-	if (ret) {
-		put_device(&mdiodev->dev);
+	if (!ret) {
+		device_initialize(&mdiodev->dev);
+	} else {
+		kfree(dev);
 		dev = ERR_PTR(ret);
 	}
 
@@ -797,10 +797,8 @@ static int get_phy_id(struct mii_bus *bus, int addr, u32 *phy_id,
 
 	/* Grab the bits from PHYIR2, and put them in the lower half */
 	phy_reg = mdiobus_read(bus, addr, MII_PHYSID2);
-	if (phy_reg < 0) {
-		/* returning -ENODEV doesn't stop bus scanning */
-		return (phy_reg == -EIO || phy_reg == -ENODEV) ? -ENODEV : -EIO;
-	}
+	if (phy_reg < 0)
+		return -EIO;
 
 	*phy_id |= phy_reg;
 
@@ -1421,8 +1419,7 @@ void phy_detach(struct phy_device *phydev)
 
 	phy_led_triggers_unregister(phydev);
 
-	if (phydev->mdio.dev.driver)
-		module_put(phydev->mdio.dev.driver->owner);
+	module_put(phydev->mdio.dev.driver->owner);
 
 	/* If the device had no specific driver before (i.e. - it
 	 * was using the generic driver), we unbind the device

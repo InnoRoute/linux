@@ -1330,10 +1330,6 @@ out:
 	return ret;
 }
 
-static void prevent_dealloc_device(struct ib_device *ib_dev)
-{
-}
-
 /**
  * ib_register_device - Register an IB device with IB core
  * @device:Device to register
@@ -1401,11 +1397,11 @@ int ib_register_device(struct ib_device *device, const char *name)
 		 * possibility for a parallel unregistration along with this
 		 * error flow. Since we have a refcount here we know any
 		 * parallel flow is stopped in disable_device and will see the
-		 * special dealloc_driver pointer, causing the responsibility to
+		 * NULL pointers, causing the responsibility to
 		 * ib_dealloc_device() to revert back to this thread.
 		 */
 		dealloc_fn = device->ops.dealloc_driver;
-		device->ops.dealloc_driver = prevent_dealloc_device;
+		device->ops.dealloc_driver = NULL;
 		ib_device_put(device);
 		__ib_unregister_device(device);
 		device->ops.dealloc_driver = dealloc_fn;
@@ -1453,8 +1449,7 @@ static void __ib_unregister_device(struct ib_device *ib_dev)
 	 * Drivers using the new flow may not call ib_dealloc_device except
 	 * in error unwind prior to registration success.
 	 */
-	if (ib_dev->ops.dealloc_driver &&
-	    ib_dev->ops.dealloc_driver != prevent_dealloc_device) {
+	if (ib_dev->ops.dealloc_driver) {
 		WARN_ON(kref_read(&ib_dev->dev.kobj.kref) <= 1);
 		ib_dealloc_device(ib_dev);
 	}

@@ -39,11 +39,6 @@
 				CPVDD-supply = <&vdd_3v3_reg>;
 				status = "okay";
 			};
-			hpamp: hpamp@60 {
-				compatible = "ti,tpa6130a2";
-				reg = <0x60>;
-				status = "disabled";
-			};
 		};
 	};
 

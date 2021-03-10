@@ -192,15 +192,9 @@ enum v4l2_colorfx {
  * We reserve 16 controls for this driver. */
 #define V4L2_CID_USER_IMX_BASE			(V4L2_CID_USER_BASE + 0x10b0)
 
-/*
- * The base for the atmel isc driver controls.
- * We reserve 32 controls for this driver.
- */
-#define V4L2_CID_USER_ATMEL_ISC_BASE		(V4L2_CID_USER_BASE + 0x10c0)
-
 /* The base for the bcm2835-isp driver controls.
  * We reserve 16 controls for this driver. */
-#define V4L2_CID_USER_BCM2835_ISP_BASE		(V4L2_CID_USER_BASE + 0x10e0)
+#define V4L2_CID_USER_BCM2835_ISP_BASE		(V4L2_CID_USER_BASE + 0x10c0)
 
 /* MPEG-class control IDs */
 /* The MPEG controls are applicable to all codec controls
@@ -922,13 +916,6 @@ enum v4l2_auto_focus_range {
 
 #define V4L2_CID_PAN_SPEED			(V4L2_CID_CAMERA_CLASS_BASE+32)
 #define V4L2_CID_TILT_SPEED			(V4L2_CID_CAMERA_CLASS_BASE+33)
-
-#define V4L2_CID_CAMERA_ORIENTATION		(V4L2_CID_CAMERA_CLASS_BASE+34)
-#define V4L2_CAMERA_ORIENTATION_FRONT		0
-#define V4L2_CAMERA_ORIENTATION_BACK		1
-#define V4L2_CAMERA_ORIENTATION_EXTERNAL	2
-
-#define V4L2_CID_CAMERA_SENSOR_ROTATION		(V4L2_CID_CAMERA_CLASS_BASE+35)
 
 /* FM Modulator class control IDs */
 

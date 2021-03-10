@@ -246,18 +246,14 @@ void ucsi_altmode_update_active(struct ucsi_connector *con)
 					    con->partner_altmode[i] == altmode);
 }
 
-static int ucsi_altmode_next_mode(struct typec_altmode **alt, u16 svid)
+static u8 ucsi_altmode_next_mode(struct typec_altmode **alt, u16 svid)
 {
 	u8 mode = 1;
 	int i;
 
-	for (i = 0; alt[i]; i++) {
-		if (i > MODE_DISCOVERY_MAX)
-			return -ERANGE;
-
+	for (i = 0; alt[i]; i++)
 		if (alt[i]->svid == svid)
 			mode++;
-	}
 
 	return mode;
 }
@@ -292,11 +288,8 @@ static int ucsi_register_altmode(struct ucsi_connector *con,
 			goto err;
 		}
 
-		ret = ucsi_altmode_next_mode(con->port_altmode, desc->svid);
-		if (ret < 0)
-			return ret;
-
-		desc->mode = ret;
+		desc->mode = ucsi_altmode_next_mode(con->port_altmode,
+						    desc->svid);
 
 		switch (desc->svid) {
 		case USB_TYPEC_DP_SID:
@@ -322,11 +315,8 @@ static int ucsi_register_altmode(struct ucsi_connector *con,
 			goto err;
 		}
 
-		ret = ucsi_altmode_next_mode(con->partner_altmode, desc->svid);
-		if (ret < 0)
-			return ret;
-
-		desc->mode = ret;
+		desc->mode = ucsi_altmode_next_mode(con->partner_altmode,
+						    desc->svid);
 
 		alt = typec_partner_register_altmode(con->partner, desc);
 		if (IS_ERR(alt)) {
