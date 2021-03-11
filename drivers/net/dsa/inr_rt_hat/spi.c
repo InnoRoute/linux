@@ -756,7 +756,7 @@ RT_SPI_init ()
       //Register information about your slave device:
       struct spi_board_info spi_device_info = {
 	.modalias = "INR-RTHAT",
-	.max_speed_hz = 31250000,	//speed your device (slave) can handle
+	.max_speed_hz = 50000000,	//speed your device (slave) can handle
 	.bus_num = MY_BUS_NUM,
 	.chip_select = 0,
 	.mode = SPI_MODE_0,

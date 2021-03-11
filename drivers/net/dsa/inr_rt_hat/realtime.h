@@ -33,8 +33,7 @@ struct INR_TIME_timestamps
   uint64_t controlled;
 };
 
-void INR_TIME_correct_HW_timestamp (uint32_t hw_value,
-				    struct INR_TIME_timestamps *ts);
+//void INR_TIME_correct_HW_timestamp (uint32_t hw_value, struct INR_TIME_timestamps *ts);
 uint16_t INR_TIME_TX_add (struct sk_buff *skb);
 void INR_RT_tx_ts_tread_wakeup (void);
 struct ptp_clock *INR_TIME_get_ptp_clock (void);

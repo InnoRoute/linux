@@ -234,7 +234,7 @@ INR_TIME_init_ptp_clock (struct device *dev)
       uint32_t BRIDGE_clock_value_L = 0, CTRLD_clock_value_L =
 	0, BRIDGE_clock_value_H = 0, CTRLD_clock_value_H = 0;
 
-      spin_lock_irqsave (&hardwareLock, flags);
+     // spin_lock_irqsave (&hardwareLock, flags);
       BRIDGE_clock_value_L =
 	INR_SPI_MMI_read ((C_BASE_ADDR_RTC << 8) + C_SUB_ADDR_RTC_BRIDGE_LOW);
       BRIDGE_clock_value_H =
@@ -244,7 +244,7 @@ INR_TIME_init_ptp_clock (struct device *dev)
 	INR_SPI_MMI_read ((C_BASE_ADDR_RTC << 8) + C_SUB_ADDR_RTC_CTRLD_LOW);
       CTRLD_clock_value_H =
 	INR_SPI_MMI_read ((C_BASE_ADDR_RTC << 8) + C_SUB_ADDR_RTC_CTRLD_HIGH);
-      spin_unlock_irqrestore (&hardwareLock, flags);
+     // spin_unlock_irqrestore (&hardwareLock, flags);
 
       BRIDGE_clock_value =
 	BRIDGE_clock_value_L | ((uint64_t) BRIDGE_clock_value_H << 32);
@@ -330,7 +330,7 @@ INR_TIME_ptp_adjtime (struct ptp_clock_info *ptp, s64 delta)
 
   CTRLD_offset += delta;
   clockjump = 1;
-  spin_lock_irqsave (&hardwareLock, flags);
+  //spin_lock_irqsave (&hardwareLock, flags);
   INR_SPI_MMI_write (CTRLD_offset & 0xffffffff,
 		     (C_BASE_ADDR_RTC << 8) +
 		     C_SUB_ADDR_RTC_CTRLD_OFFSET_LOW);
@@ -338,7 +338,7 @@ INR_TIME_ptp_adjtime (struct ptp_clock_info *ptp, s64 delta)
 		     (C_BASE_ADDR_RTC << 8) +
 		     C_SUB_ADDR_RTC_CTRLD_OFFSET_HIGH);
   //INR_SPI_MMI_write(1,(C_BASE_ADDR_RTC<<8)+  C_SUB_ADDR_RTC_CLKSEL);
-  spin_unlock_irqrestore (&hardwareLock, flags);
+  //spin_unlock_irqrestore (&hardwareLock, flags);
   if (TS_DEBUG)
     printk (KERN_DEBUG "PTP adjtime called new offset:%llu delta:%lli\n",
 	    CTRLD_offset, delta);
@@ -365,7 +365,7 @@ INR_TIME_ptp_gettime (struct ptp_clock_info *ptp, struct timespec64 *ts)
   uint32_t BRIDGE_clock_value_L = 0, CTRLD_clock_value_L =
     0, BRIDGE_clock_value_H = 0, CTRLD_clock_value_H = 0;
 
-  spin_lock_irqsave (&hardwareLock, flags);
+  //spin_lock_irqsave (&hardwareLock, flags);
   BRIDGE_clock_value_L =
     INR_SPI_MMI_read ((C_BASE_ADDR_RTC << 8) + C_SUB_ADDR_RTC_BRIDGE_LOW);
   BRIDGE_clock_value_H =
@@ -374,7 +374,7 @@ INR_TIME_ptp_gettime (struct ptp_clock_info *ptp, struct timespec64 *ts)
     INR_SPI_MMI_read ((C_BASE_ADDR_RTC << 8) + C_SUB_ADDR_RTC_CTRLD_LOW);
   CTRLD_clock_value_H =
     INR_SPI_MMI_read ((C_BASE_ADDR_RTC << 8) + C_SUB_ADDR_RTC_CTRLD_HIGH);
-  spin_unlock_irqrestore (&hardwareLock, flags);
+  //spin_unlock_irqrestore (&hardwareLock, flags);
 
   BRIDGE_clock_value =
     BRIDGE_clock_value_L | ((uint64_t) BRIDGE_clock_value_H << 32);
@@ -407,7 +407,7 @@ INR_TIME_ptp_settime (struct ptp_clock_info *ptp, const struct timespec64 *ts)
 
 
   newvalue = timespec64_to_ns (ts);
-  spin_lock_irqsave (&hardwareLock, flags);
+  //spin_lock_irqsave (&hardwareLock, flags);
   INR_SPI_MMI_write (newvalue & 0xffffffff,
 		     (C_BASE_ADDR_RTC << 8) +
 		     C_SUB_ADDR_RTC_CTRLD_OFFSET_LOW);
@@ -415,7 +415,7 @@ INR_TIME_ptp_settime (struct ptp_clock_info *ptp, const struct timespec64 *ts)
 		     (C_BASE_ADDR_RTC << 8) +
 		     C_SUB_ADDR_RTC_CTRLD_OFFSET_HIGH);
   // INR_SPI_MMI_write(1,(C_BASE_ADDR_RTC<<8)+  C_SUB_ADDR_RTC_CLKSEL);
-  spin_unlock_irqrestore (&hardwareLock, flags);
+  //spin_unlock_irqrestore (&hardwareLock, flags);
   if (TS_DEBUG)
     printk (KERN_DEBUG "PTP adjtime called new value:%lli\n", newvalue);
 
@@ -564,69 +564,69 @@ EXPORT_SYMBOL (INR_TIME_get_ptp_clock);
 *calculate the currect timestamp from half freerunning clock
 *@brief most ts are 32 bit freerunning, but we need 64bit of controlled clock
 */
-void
-INR_TIME_correct_HW_timestamp (uint32_t hw_value,
-			       struct INR_TIME_timestamps *ts)
-{
-  uint64_t offset = 0;
-  uint8_t neg = 0;
-  uint64_t newvalue;
-  uint64_t BRIDGE_clock_value = 0, CTRLD_clock_value = 0;
-  uint32_t BRIDGE_clock_value_L = 0, CTRLD_clock_value_L =
-    0, BRIDGE_clock_value_H = 0, CTRLD_clock_value_H = 0;
+/*void*/
+/*INR_TIME_correct_HW_timestamp (uint32_t hw_value,*/
+/*			       struct INR_TIME_timestamps *ts)*/
+/*{*/
+/*  uint64_t offset = 0;*/
+/*  uint8_t neg = 0;*/
+/*  uint64_t newvalue;*/
+/*  uint64_t BRIDGE_clock_value = 0, CTRLD_clock_value = 0;*/
+/*  uint32_t BRIDGE_clock_value_L = 0, CTRLD_clock_value_L =*/
+/*    0, BRIDGE_clock_value_H = 0, CTRLD_clock_value_H = 0;*/
 
 
-  spin_lock_irqsave (&hardwareLock, flags);
-  BRIDGE_clock_value_L =
-    INR_SPI_MMI_read ((C_BASE_ADDR_RTC << 8) + C_SUB_ADDR_RTC_BRIDGE_LOW);
-  BRIDGE_clock_value_H =
-    INR_SPI_MMI_read ((C_BASE_ADDR_RTC << 8) + C_SUB_ADDR_RTC_BRIDGE_HIGH);
-  CTRLD_clock_value_L =
-    INR_SPI_MMI_read ((C_BASE_ADDR_RTC << 8) + C_SUB_ADDR_RTC_CTRLD_LOW);
-  CTRLD_clock_value_H =
-    INR_SPI_MMI_read ((C_BASE_ADDR_RTC << 8) + C_SUB_ADDR_RTC_CTRLD_HIGH);
-  spin_unlock_irqrestore (&hardwareLock, flags);
-
-
-
-  BRIDGE_clock_value =
-    (uint64_t) BRIDGE_clock_value_L | ((uint64_t) BRIDGE_clock_value_H << 32);
-  CTRLD_clock_value =
-    (uint64_t) CTRLD_clock_value_L | ((uint64_t) CTRLD_clock_value_H << 32);
-
-
-  if (CTRLD_clock_value < BRIDGE_clock_value)
-    neg = 1;
-  if (neg)
-    offset = (BRIDGE_clock_value - CTRLD_clock_value);
-  else
-    offset = (CTRLD_clock_value - BRIDGE_clock_value);
+/*  spin_lock_irqsave (&hardwareLock, flags);*/
+/*  BRIDGE_clock_value_L =*/
+/*    INR_SPI_MMI_read ((C_BASE_ADDR_RTC << 8) + C_SUB_ADDR_RTC_BRIDGE_LOW);*/
+/*  BRIDGE_clock_value_H =*/
+/*    INR_SPI_MMI_read ((C_BASE_ADDR_RTC << 8) + C_SUB_ADDR_RTC_BRIDGE_HIGH);*/
+/*  CTRLD_clock_value_L =*/
+/*    INR_SPI_MMI_read ((C_BASE_ADDR_RTC << 8) + C_SUB_ADDR_RTC_CTRLD_LOW);*/
+/*  CTRLD_clock_value_H =*/
+/*    INR_SPI_MMI_read ((C_BASE_ADDR_RTC << 8) + C_SUB_ADDR_RTC_CTRLD_HIGH);*/
+/*  spin_unlock_irqrestore (&hardwareLock, flags);*/
 
 
 
-  if ((BRIDGE_clock_value & 0xffffffff) < (uint64_t) hw_value)
-    BRIDGE_clock_value -= 0x100000000;	//there was an overflow, i asume just one and not several times 4 sec
-  //if((CTRLD_clock_value&0xffffffff)<(u64)hw_value)CTRLD_clock_value-=0x100000000; //there was an overflow, i asume just one and not several times 4 sec
-  newvalue =
-    ((BRIDGE_clock_value & 0xffffffff00000000) | (uint64_t) hw_value);
-  ts->bridge = newvalue;
-  if (neg)
-    newvalue -= offset;
-  else
-    newvalue += offset;
-  //if(bridgeclock)
-  ts->controlled = newvalue;
-  if (TS_DEBUG)
-    printk (KERN_DEBUG
-	    "TIME adjust value ..CTRLD_clock:%llu BRIDGE_clock:%llu negative:%u offset:%llu pkt_value:%lu ts_bridge:%llu ts_ctrld:%llu\n",
-	    CTRLD_clock_value, BRIDGE_clock_value, neg, offset, hw_value,
-	    ts->bridge, ts->controlled);
-  //else
-  //  return (((CTRLD_clock_value&0xffffffff00000000)|(u64)hw_value));
-  //return timecounter_cyc2time(&tc,(u64)hw_value+abs(offset));
-}
+/*  BRIDGE_clock_value =*/
+/*    (uint64_t) BRIDGE_clock_value_L | ((uint64_t) BRIDGE_clock_value_H << 32);*/
+/*  CTRLD_clock_value =*/
+/*    (uint64_t) CTRLD_clock_value_L | ((uint64_t) CTRLD_clock_value_H << 32);*/
 
-EXPORT_SYMBOL (INR_TIME_correct_HW_timestamp);
+
+/*  if (CTRLD_clock_value < BRIDGE_clock_value)*/
+/*    neg = 1;*/
+/*  if (neg)*/
+/*    offset = (BRIDGE_clock_value - CTRLD_clock_value);*/
+/*  else*/
+/*    offset = (CTRLD_clock_value - BRIDGE_clock_value);*/
+
+
+
+/*  if ((BRIDGE_clock_value & 0xffffffff) < (uint64_t) hw_value)*/
+/*    BRIDGE_clock_value -= 0x100000000;	//there was an overflow, i asume just one and not several times 4 sec*/
+/*  //if((CTRLD_clock_value&0xffffffff)<(u64)hw_value)CTRLD_clock_value-=0x100000000; //there was an overflow, i asume just one and not several times 4 sec*/
+/*  newvalue =*/
+/*    ((BRIDGE_clock_value & 0xffffffff00000000) | (uint64_t) hw_value);*/
+/*  ts->bridge = newvalue;*/
+/*  if (neg)*/
+/*    newvalue -= offset;*/
+/*  else*/
+/*    newvalue += offset;*/
+/*  //if(bridgeclock)*/
+/*  ts->controlled = newvalue;*/
+/*  if (TS_DEBUG)*/
+/*    printk (KERN_DEBUG*/
+/*	    "TIME adjust value ..CTRLD_clock:%llu BRIDGE_clock:%llu negative:%u offset:%llu pkt_value:%lu ts_bridge:%llu ts_ctrld:%llu\n",*/
+/*	    CTRLD_clock_value, BRIDGE_clock_value, neg, offset, hw_value,*/
+/*	    ts->bridge, ts->controlled);*/
+/*  //else*/
+/*  //  return (((CTRLD_clock_value&0xffffffff00000000)|(u64)hw_value));*/
+/*  //return timecounter_cyc2time(&tc,(u64)hw_value+abs(offset));*/
+/*}*/
+
+/*EXPORT_SYMBOL (INR_TIME_correct_HW_timestamp);*/
 //*****************************************************************************************************************
 /**
 *enable function
