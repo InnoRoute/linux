@@ -141,7 +141,8 @@ INR_TIME_TX_transmit_interrupt (uint8_t port)
 		  //spin_lock_irqsave (&tx_ts_lock, flags);
 		  if (!INR_TIME_vortex[entry_current].skb){
 		  printk (KERN_DEBUG"error: TXtime got empty skb.\n");
-		  goto unlock;
+		  //goto unlock;
+		  break;
 		  
 		  }
 		    
@@ -163,7 +164,7 @@ INR_TIME_TX_transmit_interrupt (uint8_t port)
 		  //dev_kfree_skb_any(INR_TIME_vortex[entry_current].skb);
 		  INR_TIME_vortex[entry_current].used = 0;
 		  INR_TIME_vortex[entry_current].skb = NULL;
-		unlock:
+		//unlock:
 		  //spin_unlock_irqrestore (&tx_ts_lock, flags);
 		}
 	      else if (DEBUG)
