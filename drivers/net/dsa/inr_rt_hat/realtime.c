@@ -98,7 +98,7 @@ INR_TIME_TX_transmit_interrupt (uint8_t port)
   if (DEBUG)
     printk (KERN_DEBUG "DEBUG: Passed %s %d \n", __FUNCTION__, __LINE__);
   //while(down_trylock(&INR_TIME_TX_transmit_interrupt_sem)); // prevent raceconditions
-  down_killable (&INR_TIME_TX_transmit_interrupt_sem);
+  //down_killable (&INR_TIME_TX_transmit_interrupt_sem);
   //if(down_trylock(&INR_TIME_TX_transmit_interrupt_sem)){
   uint32_t entry_current = 1, tmp = 0, tmp2 = 0;
   uint32_t portmap = 0;
@@ -138,7 +138,7 @@ INR_TIME_TX_transmit_interrupt (uint8_t port)
 	      if (INR_TIME_vortex[entry_current].used)
 		{
 		  unsigned long flags;
-		  spin_lock_irqsave (&tx_ts_lock, flags);
+		  //spin_lock_irqsave (&tx_ts_lock, flags);
 		  if (!INR_TIME_vortex[entry_current].skb){
 		  printk (KERN_DEBUG"error: TXtime got empty skb.\n");
 		  goto unlock;
@@ -164,7 +164,7 @@ INR_TIME_TX_transmit_interrupt (uint8_t port)
 		  INR_TIME_vortex[entry_current].used = 0;
 		  INR_TIME_vortex[entry_current].skb = NULL;
 		unlock:
-		  spin_unlock_irqrestore (&tx_ts_lock, flags);
+		  //spin_unlock_irqrestore (&tx_ts_lock, flags);
 		}
 	      else if (DEBUG)
 		printk (KERN_DEBUG
@@ -174,7 +174,7 @@ INR_TIME_TX_transmit_interrupt (uint8_t port)
 
 	}
     }
-  up (&INR_TIME_TX_transmit_interrupt_sem);
+  //up (&INR_TIME_TX_transmit_interrupt_sem);
 }
 
 //*****************************************************************************************************************

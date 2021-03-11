@@ -52,12 +52,14 @@ INR_tag_xmit_ll (struct sk_buff *skb,
       is_ptp = 1;
     }
 
-spin_lock_irqsave(&tx_lock, flags);
+//spin_lock_irqsave(&tx_lock, flags);
 
 
   // from CPU
 //if(DEBUG)printk(KERN_DEBUG "DEBUG: Passed %s %d por:%i\n",__FUNCTION__,__LINE__,dp->index);
-  if (skb_cow_head (skb, INR_TAG_LEN) < 0){printk(KERN_ERR "tx packet dropped: cow_head\n");spin_unlock_irqrestore(&tx_lock, flags);return NULL;}
+  if (skb_cow_head (skb, INR_TAG_LEN) < 0){printk(KERN_ERR "tx packet dropped: cow_head\n");
+  //spin_unlock_irqrestore(&tx_lock, flags);
+  return NULL;}
     
 
   /* The Ethernet switch we are interfaced with needs packets to be at
@@ -69,7 +71,9 @@ spin_lock_irqsave(&tx_lock, flags);
    *
    * Let dsa_slave_xmit() free the SKB
    */
-  if (__skb_put_padto (skb, ETH_ZLEN + INR_TAG_LEN, false)){printk(KERN_ERR "tx packet dropped: padto\n");spin_unlock_irqrestore(&tx_lock, flags);return NULL;}
+  if (__skb_put_padto (skb, ETH_ZLEN + INR_TAG_LEN, false)){printk(KERN_ERR "tx packet dropped: padto\n");
+  //spin_unlock_irqrestore(&tx_lock, flags);
+  return NULL;}
     
 
   skb_push (skb, INR_TAG_LEN);
@@ -134,7 +138,7 @@ spin_lock_irqsave(&tx_lock, flags);
   //skb_set_queue_mapping(skb, INR_TAG_SET_PORT_QUEUE(dp->index, queue));
   skb_tx_timestamp (skb);
   
-  spin_unlock_irqrestore(&tx_lock, flags);
+  //spin_unlock_irqrestore(&tx_lock, flags);
   return skb;
 }
 
