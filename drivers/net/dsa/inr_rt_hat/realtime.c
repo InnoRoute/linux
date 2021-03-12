@@ -518,7 +518,7 @@ INR_TIME_TX_add (struct sk_buff *skb)
 /*        if(INR_TIME_vortex[INR_TIME_TX_vortex_current].used) { //overrun detected, clear entry*/
 /*            if(INR_TIME_vortex[INR_TIME_TX_vortex_current].skb)skb_tx_timestamp(INR_TIME_vortex[INR_TIME_TX_vortex_current].skb);*/
 /*        }*/
-      INR_TIME_vortex[INR_TIME_TX_vortex_current].skb = skb;
+      INR_TIME_vortex[INR_TIME_TX_vortex_current].skb = skb_get(skb);
       INR_TIME_vortex[INR_TIME_TX_vortex_current].used = 1;
       if (INR_TIME_TX_vortex_current < INR_TIME_TX_vortex_lastread)
 	{
