@@ -34,6 +34,7 @@
 #include "realtime.h"
 #include <asm/div64.h>
 DEFINE_SPINLOCK (hardwareLock);
+
 struct INR_TIME_TX_entry INR_TIME_vortex[INR_TIME_vortex_length];	//no, its not bigger on the inside :D
 uint16_t INR_TIME_TX_vortex_current = 1;
 volatile uint16_t INR_TIME_TX_vortex_lastread = 1;
@@ -160,7 +161,7 @@ INR_TIME_TX_transmit_interrupt (uint8_t port)
 		  //if(INR_TIME_vortex[entry_current].skb->sk->sk_error_queue)
 		  skb_tstamp_tx (INR_TIME_vortex[entry_current].skb,
 				 skbtimestamp);
-		  //dev_kfree_skb_any(INR_TIME_vortex[entry_current].skb);
+		  if(INR_TIME_vortex[entry_current].skb)dev_kfree_skb_any(INR_TIME_vortex[entry_current].skb);
 		  INR_TIME_vortex[entry_current].used = 0;
 		  INR_TIME_vortex[entry_current].skb = NULL;
 		//unlock:
