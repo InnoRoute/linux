@@ -38,13 +38,13 @@ uint16_t INR_TIME_TX_add (struct sk_buff *skb);
 void INR_RT_tx_ts_tread_wakeup (void);
 struct ptp_clock *INR_TIME_get_ptp_clock (void);
 void INR_TIME_init_ptp_clock (struct device *dev);
-static int INR_TIME_ptp_adjfreq (struct ptp_clock_info *ptp, s32 ppb);
-static int INR_TIME_ptp_adjtime (struct ptp_clock_info *ptp, s64 delta);
-static int INR_TIME_ptp_gettime (struct ptp_clock_info *ptp,
+int INR_TIME_ptp_adjfreq (struct ptp_clock_info *ptp, s32 ppb);
+int INR_TIME_ptp_adjtime (struct ptp_clock_info *ptp, s64 delta);
+int INR_TIME_ptp_gettime (struct ptp_clock_info *ptp,
 				 struct timespec64 *ts);
-static int INR_TIME_ptp_settime (struct ptp_clock_info *ptp,
+int INR_TIME_ptp_settime (struct ptp_clock_info *ptp,
 				 const struct timespec64 *ts);
-static int INR_TIME_ptp_enable (struct ptp_clock_info *ptp,
+int INR_TIME_ptp_enable (struct ptp_clock_info *ptp,
 				struct ptp_clock_request *rq, int on);
 void INR_TIME_clear_vortex (void);
 struct ptp_clock *INR_TIME_get_ptp_clock (void);

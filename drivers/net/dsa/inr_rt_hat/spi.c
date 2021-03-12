@@ -46,20 +46,20 @@
 
 #define MY_BUS_NUM 0
 static struct spi_device *spi_device;
-volatile uint8_t spi_enabled = 0;
-volatile uint32_t data_w = 0;
-volatile uint32_t data_r = 0;
-volatile uint8_t cs = 0;
-volatile uint8_t semaphor = 0;
-unsigned char ch1 = 0xAA;
-unsigned char ch2 = 0xBB;
-uint8_t portcount = 3;
-uint16_t INTERRRUPT_MASK = 0x13ff;
-uint32_t COMMON_INTERRUPT_MASK = 0xffffffff;
-uint8_t pollcount__MMI = 0, pollcount__MMI2 = 0;
-volatile uint32_t COMMON_INTERRUPT_STATE = 0;
-volatile uint8_t INT_count1 = 0;
-volatile uint8_t INT_count2 = 0;
+static volatile uint8_t spi_enabled = 0;
+static volatile uint32_t data_w = 0;
+static volatile uint32_t data_r = 0;
+static volatile uint8_t cs = 0;
+static volatile uint8_t semaphor = 0;
+static unsigned char ch1 = 0xAA;
+static unsigned char ch2 = 0xBB;
+static uint8_t portcount = 3;
+static uint16_t INTERRRUPT_MASK = 0x13ff;
+static uint32_t COMMON_INTERRUPT_MASK = 0xffffffff;
+static uint8_t pollcount__MMI = 0, pollcount__MMI2 = 0;
+static volatile uint32_t COMMON_INTERRUPT_STATE = 0;
+static volatile uint8_t INT_count1 = 0;
+static volatile uint8_t INT_count2 = 0;
 
 static struct cdev *driver_object;
 static char *devname = "gpio_irq";
