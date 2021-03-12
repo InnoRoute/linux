@@ -34,7 +34,6 @@
 #include "realtime.h"
 #include <asm/div64.h>
 DEFINE_SPINLOCK (hardwareLock);
-unsigned long flags;
 struct INR_TIME_TX_entry INR_TIME_vortex[INR_TIME_vortex_length];	//no, its not bigger on the inside :D
 uint16_t INR_TIME_TX_vortex_current = 1;
 volatile uint16_t INR_TIME_TX_vortex_lastread = 1;
