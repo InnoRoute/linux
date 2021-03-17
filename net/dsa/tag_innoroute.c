@@ -178,7 +178,7 @@ INR_tag_rcv_ll (struct sk_buff *skb,
     case 0:
       source_port = 0;
       break;
-    case 2:
+    case 1:
       source_port = 1;
       break;
     default:
