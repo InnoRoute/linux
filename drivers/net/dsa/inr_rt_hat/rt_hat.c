@@ -387,6 +387,7 @@ rt_hat_drv_probe (struct mdio_device *mdiodev)
   ds->ops = &rt_hat_driver;
   ds->priv = ps;
   ps->bus = mdiodev->bus;
+  ds->num_tx_queues = RTHAT_NUM_EGRESS_QUEUES;
 
   dev_set_drvdata (&mdiodev->dev, ds);
   INR_TIME_init_ptp_clock (&mdiodev->dev);

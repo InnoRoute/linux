@@ -24,5 +24,6 @@ struct rt_hat_pdata
 
 #define RT_HAT_NUM_PORTS	3
 #define RT_HAT_CPU_PORT (RT_HAT_NUM_PORTS-1)
+#define RTHAT_NUM_EGRESS_QUEUES 8
 
 #endif /* __RT_HAT_H */
