@@ -9,7 +9,7 @@
 #define INR_debug_RX 0
 #define INR_debug_TX 0
 #define DEBUG 1
-#define DSA_TAG_VERSION 4
+#define DSA_TAG_VERSION 3
 
 
 struct INR_TIME_timestamps
