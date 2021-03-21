@@ -329,7 +329,7 @@ PROC_FS_init ()
       return -ENOMEM;
     }
 
-  reg1 = proc_create ("RT_enable", 0644, INR_proc_dir, &RT_enable);
+  reg1 = proc_create ("RT_enable", 0666, INR_proc_dir, &RT_enable);
   if (reg1 == NULL)
     {
       remove_proc_entry ("RT_enable", INR_proc_dir);
@@ -339,7 +339,7 @@ PROC_FS_init ()
     }
   printk (KERN_INFO "/proc/%s created\n", "RT_enable");
 
-  reg2 = proc_create ("SPI_read", 0644, INR_proc_dir, &SPI_read);
+  reg2 = proc_create ("SPI_read", 0666, INR_proc_dir, &SPI_read);
   if (reg2 == NULL)
     {
       remove_proc_entry ("SPI_read", INR_proc_dir);
@@ -349,7 +349,7 @@ PROC_FS_init ()
     }
   printk (KERN_INFO "/proc/%s created\n", "SPI_read");
 
-  reg3 = proc_create ("SPI_write", 0644, INR_proc_dir, &SPI_write);
+  reg3 = proc_create ("SPI_write", 0666, INR_proc_dir, &SPI_write);
   if (reg3 == NULL)
     {
       remove_proc_entry ("SPI_write", INR_proc_dir);
@@ -359,7 +359,7 @@ PROC_FS_init ()
     }
   printk (KERN_INFO "/proc/%s created\n", "SPI_write");
 
-  reg4 = proc_create ("SPI_data", 0644, INR_proc_dir, &SPI_data);
+  reg4 = proc_create ("SPI_data", 0666, INR_proc_dir, &SPI_data);
   if (reg4 == NULL)
     {
       remove_proc_entry ("SPI_data", INR_proc_dir);
@@ -368,7 +368,7 @@ PROC_FS_init ()
       return -ENOMEM;
     }
   printk (KERN_INFO "/proc/%s created\n", "SPI_data");
-  reg5 = proc_create ("SPI_file", 0644, INR_proc_dir, &SPI_file);
+  reg5 = proc_create ("SPI_file", 0666, INR_proc_dir, &SPI_file);
   if (reg5 == NULL)
     {
       remove_proc_entry ("SPI_file", INR_proc_dir);
