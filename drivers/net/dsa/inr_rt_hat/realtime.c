@@ -62,28 +62,25 @@ DEFINE_SEMAPHORE (INR_TIME_TX_add_sem);
 void
 INR_TIME_clear_vortex ()
 {
-  printk (KERN_DEBUG "DEBUG: Passed %s %d \n", __FUNCTION__, __LINE__);
-  uint16_t i = 0;
+    printk (KERN_DEBUG "DEBUG: Passed %s %d \n", __FUNCTION__, __LINE__);
+    uint16_t i = 0;
 
 
 
-  if (INR_TIME_TX_vortex_current < INR_TIME_TX_vortex_lastread)
-    {
-      for (i = INR_TIME_TX_vortex_current; i <= INR_TIME_TX_vortex_lastread;
-	   i++)
-	INR_TIME_vortex[i].skb = NULL;
-    }
-  else
-    {
+    if (INR_TIME_TX_vortex_current < INR_TIME_TX_vortex_lastread) {
+        for (i = INR_TIME_TX_vortex_current; i <= INR_TIME_TX_vortex_lastread;
+             i++)
+            INR_TIME_vortex[i].skb = NULL;
+    } else {
 
-      for (i = INR_TIME_TX_vortex_lastread; i <= INR_TIME_TX_vortex_current;
-	   i++)
-	INR_TIME_vortex[i].skb = NULL;
+        for (i = INR_TIME_TX_vortex_lastread; i <= INR_TIME_TX_vortex_current;
+             i++)
+            INR_TIME_vortex[i].skb = NULL;
     }
 
-  //wake_up_interruptible (&INR_RT_tx_ts_force_waittingqueu);
-  //INR_TIME_TX_vortex_current=1;
-  INR_TIME_TX_vortex_lastread=INR_TIME_TX_vortex_current;
+    //wake_up_interruptible (&INR_RT_tx_ts_force_waittingqueu);
+    //INR_TIME_TX_vortex_current=1;
+    INR_TIME_TX_vortex_lastread=INR_TIME_TX_vortex_current;
 }
 
 EXPORT_SYMBOL (INR_TIME_clear_vortex);
@@ -95,87 +92,75 @@ EXPORT_SYMBOL (INR_TIME_clear_vortex);
 void
 INR_TIME_TX_transmit_interrupt (uint8_t port)
 {
-  if (DEBUG)
-    printk (KERN_DEBUG "DEBUG: Passed %s %d \n", __FUNCTION__, __LINE__);
-  //while(down_trylock(&INR_TIME_TX_transmit_interrupt_sem)); // prevent raceconditions
-  //down_killable (&INR_TIME_TX_transmit_interrupt_sem);
-  //if(down_trylock(&INR_TIME_TX_transmit_interrupt_sem)){
-  uint32_t entry_current = 1, tmp = 0, tmp2 = 0;
-  uint32_t portmap = 0;
-  uint32_t timestamp_L = 0;
-  uint32_t timestamp_H = 0;
-  uint64_t timestamp = 0;
-  uint8_t last = 0;
-  uint8_t i = 0;
-  if (INR_TIME_enable)
-    {
-      while ((entry_current > 0) && (last == 0))
-	{
-	  entry_current =
-	    INR_SPI_MMI_read ((C_BASE_ADDR_NET_LOWER << 8) +
-			      C_SUB_ADDR_NET_TX_CONF_L + ((port * 4) +
-							  0) * 4);
-	  if (entry_current & (1 << 16))
-	    last = 1;
-	  entry_current &= 0xffff;
-	  if (entry_current)
-	    {
-	      INR_TIME_TX_vortex_lastread = entry_current;
-	      timestamp_L =
-		INR_SPI_MMI_read ((C_BASE_ADDR_NET_LOWER << 8) +
-				  C_SUB_ADDR_NET_TX_CONF_L + ((port * 4) +
-							      1) * 4);
-	      timestamp_H =
-		INR_SPI_MMI_read ((C_BASE_ADDR_NET_LOWER << 8) +
-				  C_SUB_ADDR_NET_TX_CONF_L + ((port * 4) +
-							      2) * 4);
-	      timestamp =
-		(0x00000000ffffffff&(uint64_t) timestamp_L) | ((uint64_t) timestamp_H << 32);
-	      //if (TS_DEBUG)
-		if (TS_DEBUG)printk (KERN_DEBUG
-			"Port: %i TX entry id: %i timestamp:0x%16llx\n", port,
-			entry_current, timestamp);
-	      if (INR_TIME_vortex[entry_current].used)
-		{
-		  unsigned long flags;
-		  //spin_lock_irqsave (&tx_ts_lock, flags);
-		  if (!INR_TIME_vortex[entry_current].skb){
-		  printk (KERN_DEBUG"error: TXtime got empty skb.\n");
-		  //goto unlock;
-		  break;
-		  
-		  }
-		    
-		  struct skb_shared_hwtstamps *skbtimestamp =
-		    skb_hwtstamps (INR_TIME_vortex[entry_current].skb);
-		  memset (skbtimestamp, 0,
-			  sizeof (struct skb_shared_hwtstamps));
+    if (DEBUG)
+        printk (KERN_DEBUG "DEBUG: Passed %s %d \n", __FUNCTION__, __LINE__);
+    //while(down_trylock(&INR_TIME_TX_transmit_interrupt_sem)); // prevent raceconditions
+    //down_killable (&INR_TIME_TX_transmit_interrupt_sem);
+    //if(down_trylock(&INR_TIME_TX_transmit_interrupt_sem)){
+    uint32_t entry_current = 1, tmp = 0, tmp2 = 0;
+    uint32_t portmap = 0;
+    uint32_t timestamp_L = 0;
+    uint32_t timestamp_H = 0;
+    uint64_t timestamp = 0;
+    uint8_t last = 0;
+    uint8_t i = 0;
+    if (INR_TIME_enable) {
+        while ((entry_current > 0) && (last == 0)) {
+            entry_current =	    INR_SPI_MMI_read ((C_BASE_ADDR_NET_LOWER << 8) + C_SUB_ADDR_NET_TX_CONF_L + ((port * 4) + 0) * 4);
+            if (entry_current & (1 << 16))
+                last = 1;
+            entry_current &= 0xffff;
+            if (entry_current) {
+                INR_TIME_TX_vortex_lastread = entry_current;
+                timestamp_L =
+                    INR_SPI_MMI_read ((C_BASE_ADDR_NET_LOWER << 8) + C_SUB_ADDR_NET_TX_CONF_L + ((port * 4) + 1) * 4);
+                timestamp_H =
+                    INR_SPI_MMI_read ((C_BASE_ADDR_NET_LOWER << 8) + C_SUB_ADDR_NET_TX_CONF_L + ((port * 4) + 2) * 4);
+                timestamp =
+                    (0x00000000ffffffff&(uint64_t) timestamp_L) | ((uint64_t) timestamp_H << 32);
+                //if (TS_DEBUG)
+                if (TS_DEBUG)printk (KERN_DEBUG
+                                         "Port: %i TX entry id: %i timestamp:0x%16llx\n", port,
+                                         entry_current, timestamp);
+                if (INR_TIME_vortex[entry_current].used) {
+                    unsigned long flags;
+                    //spin_lock_irqsave (&tx_ts_lock, flags);
+                    if (!INR_TIME_vortex[entry_current].skb) {
+                        printk (KERN_DEBUG"error: TXtime got empty skb.\n");
+                        //goto unlock;
+                        break;
 
-		  skbtimestamp->hwtstamp = ns_to_ktime (timestamp);	//0: insert timestamp here...
+                    }
 
-		  if (TS_DEBUG)
-		    printk (KERN_DEBUG
-			    "Write timestamp to skb ns:%llu, ktime:%llu\n",
-			    timestamp, skbtimestamp->hwtstamp);
+                    struct skb_shared_hwtstamps *skbtimestamp =
+                        skb_hwtstamps (INR_TIME_vortex[entry_current].skb);
+                    memset (skbtimestamp, 0,
+                            sizeof (struct skb_shared_hwtstamps));
 
-		  //if(INR_TIME_vortex[entry_current].skb->sk->sk_error_queue)
-		  skb_tstamp_tx (INR_TIME_vortex[entry_current].skb,
-				 skbtimestamp);
-		  if(INR_TIME_vortex[entry_current].skb)dev_kfree_skb_any(INR_TIME_vortex[entry_current].skb);
-		  INR_TIME_vortex[entry_current].used = 0;
-		  INR_TIME_vortex[entry_current].skb = NULL;
-		//unlock:
-		  //spin_unlock_irqrestore (&tx_ts_lock, flags);
-		}
-	      else if (DEBUG)
-		printk (KERN_DEBUG
-			"error: TXtime got point to empty timevortex.\n");
-	    }
+                    skbtimestamp->hwtstamp = ns_to_ktime (timestamp);	//0: insert timestamp here...
+
+                    if (TS_DEBUG)
+                        printk (KERN_DEBUG
+                                "Write timestamp to skb ns:%llu, ktime:%llu\n",
+                                timestamp, skbtimestamp->hwtstamp);
+
+                    //if(INR_TIME_vortex[entry_current].skb->sk->sk_error_queue)
+                    skb_tstamp_tx (INR_TIME_vortex[entry_current].skb,
+                                   skbtimestamp);
+                    if(INR_TIME_vortex[entry_current].skb)dev_kfree_skb_any(INR_TIME_vortex[entry_current].skb);
+                    INR_TIME_vortex[entry_current].used = 0;
+                    INR_TIME_vortex[entry_current].skb = NULL;
+                    //unlock:
+                    //spin_unlock_irqrestore (&tx_ts_lock, flags);
+                } else if (DEBUG)
+                    printk (KERN_DEBUG
+                            "error: TXtime got point to empty timevortex.\n");
+            }
 
 
-	}
+        }
     }
-  //up (&INR_TIME_TX_transmit_interrupt_sem);
+    //up (&INR_TIME_TX_transmit_interrupt_sem);
 }
 
 //*****************************************************************************************************************
@@ -187,9 +172,9 @@ void
 INR_TIME_remove_ptp_clock ()
 {
 
-  if (clock_registred)
-    ptp_clock_unregister (ptp_clock);
-  clock_registred = 0;
+    if (clock_registred)
+        ptp_clock_unregister (ptp_clock);
+    clock_registred = 0;
 
 
 }
@@ -202,79 +187,75 @@ INR_TIME_remove_ptp_clock ()
 void
 INR_TIME_init_ptp_clock (struct device *dev)
 {
-  init_interrupts ();
-  if (clock_registred == 0)
-    {
-      snprintf (ptp_caps.name, 16, "%s", "RealTimeHAT");
-      ptp_caps.owner = THIS_MODULE;
-      ptp_caps.max_adj = 250000000;
-      ptp_caps.n_alarm = 0;
-      ptp_caps.n_ext_ts = 0;
-      ptp_caps.n_per_out = 0;
-      ptp_caps.pps = 1;
-      ptp_caps.adjfreq = INR_TIME_ptp_adjfreq;
-      ptp_caps.adjtime = INR_TIME_ptp_adjtime;
-      ptp_caps.gettime64 = INR_TIME_ptp_gettime;
-      ptp_caps.settime64 = INR_TIME_ptp_settime;
-      ptp_caps.enable = INR_TIME_ptp_enable;
+    init_interrupts ();
+    if (clock_registred == 0) {
+        snprintf (ptp_caps.name, 16, "%s", "RealTimeHAT");
+        ptp_caps.owner = THIS_MODULE;
+        ptp_caps.max_adj = 250000000;
+        ptp_caps.n_alarm = 0;
+        ptp_caps.n_ext_ts = 0;
+        ptp_caps.n_per_out = 0;
+        ptp_caps.pps = 1;
+        ptp_caps.adjfreq = INR_TIME_ptp_adjfreq;
+        ptp_caps.adjtime = INR_TIME_ptp_adjtime;
+        ptp_caps.gettime64 = INR_TIME_ptp_gettime;
+        ptp_caps.settime64 = INR_TIME_ptp_settime;
+        ptp_caps.enable = INR_TIME_ptp_enable;
 
-      ptp_clock = ptp_clock_register (&ptp_caps, dev);	//register always on TN0
-      if (IS_ERR (ptp_clock))
-	{
-	  ptp_clock = NULL;
-	  if (TS_DEBUG)
-	    printk (KERN_DEBUG "ptp_clock_register failed\n");
-	  return;
-	}
-      else if (TS_DEBUG)
-	printk (KERN_DEBUG "registered PHC device\n");
-      clock_registred = 1;
-      //memset(&cc, 0, sizeof(cc));
-      uint64_t BRIDGE_clock_value = 0, CTRLD_clock_value = 0;
-      uint32_t BRIDGE_clock_value_L = 0, CTRLD_clock_value_L =
-	0, BRIDGE_clock_value_H = 0, CTRLD_clock_value_H = 0;
+        ptp_clock = ptp_clock_register (&ptp_caps, dev);	//register always on TN0
+        if (IS_ERR (ptp_clock)) {
+            ptp_clock = NULL;
+            if (TS_DEBUG)
+                printk (KERN_DEBUG "ptp_clock_register failed\n");
+            return;
+        } else if (TS_DEBUG)
+            printk (KERN_DEBUG "registered PHC device\n");
+        clock_registred = 1;
+        //memset(&cc, 0, sizeof(cc));
+        uint64_t BRIDGE_clock_value = 0, CTRLD_clock_value = 0;
+        uint32_t BRIDGE_clock_value_L = 0, CTRLD_clock_value_L =
+                                            0, BRIDGE_clock_value_H = 0, CTRLD_clock_value_H = 0;
 
-     // spin_lock_irqsave (&hardwareLock, flags);
-      BRIDGE_clock_value_L =
-	INR_SPI_MMI_read ((C_BASE_ADDR_RTC << 8) + C_SUB_ADDR_RTC_BRIDGE_LOW);
-      BRIDGE_clock_value_H =
-	INR_SPI_MMI_read ((C_BASE_ADDR_RTC << 8) +
-			  C_SUB_ADDR_RTC_BRIDGE_HIGH);
-      CTRLD_clock_value_L =
-	INR_SPI_MMI_read ((C_BASE_ADDR_RTC << 8) + C_SUB_ADDR_RTC_CTRLD_LOW);
-      CTRLD_clock_value_H =
-	INR_SPI_MMI_read ((C_BASE_ADDR_RTC << 8) + C_SUB_ADDR_RTC_CTRLD_HIGH);
-     // spin_unlock_irqrestore (&hardwareLock, flags);
+        // spin_lock_irqsave (&hardwareLock, flags);
+        BRIDGE_clock_value_L =
+            INR_SPI_MMI_read ((C_BASE_ADDR_RTC << 8) + C_SUB_ADDR_RTC_BRIDGE_LOW);
+        BRIDGE_clock_value_H =
+            INR_SPI_MMI_read ((C_BASE_ADDR_RTC << 8) +
+                              C_SUB_ADDR_RTC_BRIDGE_HIGH);
+        CTRLD_clock_value_L =
+            INR_SPI_MMI_read ((C_BASE_ADDR_RTC << 8) + C_SUB_ADDR_RTC_CTRLD_LOW);
+        CTRLD_clock_value_H =
+            INR_SPI_MMI_read ((C_BASE_ADDR_RTC << 8) + C_SUB_ADDR_RTC_CTRLD_HIGH);
+        // spin_unlock_irqrestore (&hardwareLock, flags);
 
-      BRIDGE_clock_value =
-	BRIDGE_clock_value_L | ((uint64_t) BRIDGE_clock_value_H << 32);
-      CTRLD_clock_value =
-	CTRLD_clock_value_L | ((uint64_t) CTRLD_clock_value_H << 32);
-      //cc.read = INR_TIME_cyclecounter_read;
-      //cc.mask = CYCLECOUNTER_MASK(64);//trustnode count ns in 32 bit
-      //cc.shift = 0;//innoroute counter runns in ns
-      //cc.mult = 1;
-      //timecounter_init(&tc,&cc,CTRLD_clock_value);
-      INR_TIME_ptp_adjtime (NULL, 0);	//synchonize controlled and freeruning clock
+        BRIDGE_clock_value =
+            BRIDGE_clock_value_L | ((uint64_t) BRIDGE_clock_value_H << 32);
+        CTRLD_clock_value =
+            CTRLD_clock_value_L | ((uint64_t) CTRLD_clock_value_H << 32);
+        //cc.read = INR_TIME_cyclecounter_read;
+        //cc.mask = CYCLECOUNTER_MASK(64);//trustnode count ns in 32 bit
+        //cc.shift = 0;//innoroute counter runns in ns
+        //cc.mult = 1;
+        //timecounter_init(&tc,&cc,CTRLD_clock_value);
+        INR_TIME_ptp_adjtime (NULL, 0);	//synchonize controlled and freeruning clock
     }
 
-  uint64_t time_granularity = 5;
+    uint64_t time_granularity = 5;
 #ifdef C_SUB_ADDR_TM_SCHED_TAS_TICK_GRANULARITY
-  time_granularity =
-    INR_SPI_MMI_read ((C_BASE_ADDR_TM_SCHED_LOWER << 8) +
-		      C_SUB_ADDR_TM_SCHED_TAS_TICK_GRANULARITY);
+    time_granularity =
+        INR_SPI_MMI_read ((C_BASE_ADDR_TM_SCHED_LOWER << 8) +
+                          C_SUB_ADDR_TM_SCHED_TAS_TICK_GRANULARITY);
 #endif
-  if (time_granularity > 100)
-    {
-      if (TS_DEBUG)
-	printk (KERN_DEBUG
-		"error: Strange value %i for TAS time granularity, will be reset to 5ns",
-		time_granularity);
-      time_granularity = 5;	//plausicheck               
+    if (time_granularity > 100) {
+        if (TS_DEBUG)
+            printk (KERN_DEBUG
+                    "error: Strange value %i for TAS time granularity, will be reset to 5ns",
+                    time_granularity);
+        time_granularity = 5;	//plausicheck
     }
-  CTRLD_rate = (time_granularity << 24);
-  if (TS_DEBUG)
-    printk (KERN_DEBUG "Set Clock CTRL rate to 0x%llx", CTRLD_rate);
+    CTRLD_rate = (time_granularity << 24);
+    if (TS_DEBUG)
+        printk (KERN_DEBUG "Set Clock CTRL rate to 0x%llx", CTRLD_rate);
 
 }
 
@@ -288,34 +269,33 @@ static int
 INR_TIME_ptp_adjfreq (struct ptp_clock_info *ptp, s32 ppb)
 {
 //ppb is from base frequency
-  uint64_t freq = 1;
+    uint64_t freq = 1;
 
-  uint32_t incval = CTRLD_rate;
-  uint32_t diff = 0;
-  uint8_t neg_adj = 0;
+    uint32_t incval = CTRLD_rate;
+    uint32_t diff = 0;
+    uint8_t neg_adj = 0;
 
-  if (ppb < 0)
-    {
-      neg_adj = 1;
-      ppb = -ppb;
+    if (ppb < 0) {
+        neg_adj = 1;
+        ppb = -ppb;
     }
 
-  //CTRLD_rate+=ppb;
-  freq *= ppb;
-  freq = freq << 1;
-  uint32_t rem = do_div (freq, 1000000000ULL);
-  diff = (freq << 24) | ((rem) >> 3);
-  incval = neg_adj ? (incval - diff) : (incval + diff);
-  //incval+=3656;
-  INR_SPI_MMI_write (incval,
-		     (C_BASE_ADDR_RTC << 8) + C_SUB_ADDR_RTC_CTRLD_RATE);
-  if (TS_DEBUG)
-    printk (KERN_DEBUG
-	    "PTP adjfreq called new rate:0x%lx, diff:%lu ppb:%li neg:%u\n",
-	    incval, diff, ppb, neg_adj);
-  return 0;
+    //CTRLD_rate+=ppb;
+    freq *= ppb;
+    freq = freq << 1;
+    uint32_t rem = do_div (freq, 1000000000ULL);
+    diff = (freq << 24) | ((rem) >> 3);
+    incval = neg_adj ? (incval - diff) : (incval + diff);
+    //incval+=3656;
+    INR_SPI_MMI_write (incval,
+                       (C_BASE_ADDR_RTC << 8) + C_SUB_ADDR_RTC_CTRLD_RATE);
+    if (TS_DEBUG)
+        printk (KERN_DEBUG
+                "PTP adjfreq called new rate:0x%lx, diff:%lu ppb:%li neg:%u\n",
+                incval, diff, ppb, neg_adj);
+    return 0;
 
-  return 1;
+    return 1;
 }
 
 //*****************************************************************************************************************
@@ -328,26 +308,26 @@ INR_TIME_ptp_adjtime (struct ptp_clock_info *ptp, s64 delta)
 {
 //this is maybe not neccesarry...
 
-  CTRLD_offset += delta;
-  clockjump = 1;
-  //spin_lock_irqsave (&hardwareLock, flags);
-  INR_SPI_MMI_write (CTRLD_offset & 0xffffffff,
-		     (C_BASE_ADDR_RTC << 8) +
-		     C_SUB_ADDR_RTC_CTRLD_OFFSET_LOW);
-  INR_SPI_MMI_write ((CTRLD_offset >> 32) & 0xffffffff,
-		     (C_BASE_ADDR_RTC << 8) +
-		     C_SUB_ADDR_RTC_CTRLD_OFFSET_HIGH);
-  //INR_SPI_MMI_write(1,(C_BASE_ADDR_RTC<<8)+  C_SUB_ADDR_RTC_CLKSEL);
-  //spin_unlock_irqrestore (&hardwareLock, flags);
-  if (TS_DEBUG)
-    printk (KERN_DEBUG "PTP adjtime called new offset:%llu delta:%lli\n",
-	    CTRLD_offset, delta);
+    CTRLD_offset += delta;
+    clockjump = 1;
+    //spin_lock_irqsave (&hardwareLock, flags);
+    INR_SPI_MMI_write (CTRLD_offset & 0xffffffff,
+                       (C_BASE_ADDR_RTC << 8) +
+                       C_SUB_ADDR_RTC_CTRLD_OFFSET_LOW);
+    INR_SPI_MMI_write ((CTRLD_offset >> 32) & 0xffffffff,
+                       (C_BASE_ADDR_RTC << 8) +
+                       C_SUB_ADDR_RTC_CTRLD_OFFSET_HIGH);
+    //INR_SPI_MMI_write(1,(C_BASE_ADDR_RTC<<8)+  C_SUB_ADDR_RTC_CLKSEL);
+    //spin_unlock_irqrestore (&hardwareLock, flags);
+    if (TS_DEBUG)
+        printk (KERN_DEBUG "PTP adjtime called new offset:%llu delta:%lli\n",
+                CTRLD_offset, delta);
 
 //endo of maybe not neccesarry
 
 
-  //timecounter_adjtime(&tc,delta);
-  return 0;
+    //timecounter_adjtime(&tc,delta);
+    return 0;
 }
 
 //*****************************************************************************************************************
@@ -358,36 +338,36 @@ INR_TIME_ptp_adjtime (struct ptp_clock_info *ptp, s64 delta)
 static int
 INR_TIME_ptp_gettime (struct ptp_clock_info *ptp, struct timespec64 *ts)
 {
-  uint64_t ns = 0, ns_l = 0, ns_h = 0;
+    uint64_t ns = 0, ns_l = 0, ns_h = 0;
 
-  int64_t offset = 0;
-  uint64_t BRIDGE_clock_value = 0, CTRLD_clock_value = 0;
-  uint32_t BRIDGE_clock_value_L = 0, CTRLD_clock_value_L =
-    0, BRIDGE_clock_value_H = 0, CTRLD_clock_value_H = 0;
+    int64_t offset = 0;
+    uint64_t BRIDGE_clock_value = 0, CTRLD_clock_value = 0;
+    uint32_t BRIDGE_clock_value_L = 0, CTRLD_clock_value_L =
+                                        0, BRIDGE_clock_value_H = 0, CTRLD_clock_value_H = 0;
 
-  //spin_lock_irqsave (&hardwareLock, flags);
-  BRIDGE_clock_value_L =
-    INR_SPI_MMI_read ((C_BASE_ADDR_RTC << 8) + C_SUB_ADDR_RTC_BRIDGE_LOW);
-  BRIDGE_clock_value_H =
-    INR_SPI_MMI_read ((C_BASE_ADDR_RTC << 8) + C_SUB_ADDR_RTC_BRIDGE_HIGH);
-  CTRLD_clock_value_L =
-    INR_SPI_MMI_read ((C_BASE_ADDR_RTC << 8) + C_SUB_ADDR_RTC_CTRLD_LOW);
-  CTRLD_clock_value_H =
-    INR_SPI_MMI_read ((C_BASE_ADDR_RTC << 8) + C_SUB_ADDR_RTC_CTRLD_HIGH);
-  //spin_unlock_irqrestore (&hardwareLock, flags);
+    //spin_lock_irqsave (&hardwareLock, flags);
+    BRIDGE_clock_value_L =
+        INR_SPI_MMI_read ((C_BASE_ADDR_RTC << 8) + C_SUB_ADDR_RTC_BRIDGE_LOW);
+    BRIDGE_clock_value_H =
+        INR_SPI_MMI_read ((C_BASE_ADDR_RTC << 8) + C_SUB_ADDR_RTC_BRIDGE_HIGH);
+    CTRLD_clock_value_L =
+        INR_SPI_MMI_read ((C_BASE_ADDR_RTC << 8) + C_SUB_ADDR_RTC_CTRLD_LOW);
+    CTRLD_clock_value_H =
+        INR_SPI_MMI_read ((C_BASE_ADDR_RTC << 8) + C_SUB_ADDR_RTC_CTRLD_HIGH);
+    //spin_unlock_irqrestore (&hardwareLock, flags);
 
-  BRIDGE_clock_value =
-    BRIDGE_clock_value_L | ((uint64_t) BRIDGE_clock_value_H << 32);
-  CTRLD_clock_value =
-    CTRLD_clock_value_L | ((uint64_t) CTRLD_clock_value_H << 32);
+    BRIDGE_clock_value =
+        BRIDGE_clock_value_L | ((uint64_t) BRIDGE_clock_value_H << 32);
+    CTRLD_clock_value =
+        CTRLD_clock_value_L | ((uint64_t) CTRLD_clock_value_H << 32);
 
-  //ns=timecounter_read(&tc);
-  ns = CTRLD_clock_value;
-  *ts = ns_to_timespec64 (ns);
-  //if (TIME_DBG_mod)
-  if (TS_DEBUG)
-    printk (KERN_DEBUG "PTP get time called value:%lli\n", ns);
-  return 0;
+    //ns=timecounter_read(&tc);
+    ns = CTRLD_clock_value;
+    *ts = ns_to_timespec64 (ns);
+    //if (TIME_DBG_mod)
+    if (TS_DEBUG)
+        printk (KERN_DEBUG "PTP get time called value:%lli\n", ns);
+    return 0;
 }
 
 //*****************************************************************************************************************
@@ -398,28 +378,28 @@ INR_TIME_ptp_gettime (struct ptp_clock_info *ptp, struct timespec64 *ts)
 static int
 INR_TIME_ptp_settime (struct ptp_clock_info *ptp, const struct timespec64 *ts)
 {
-  //if (TIME_DBG_mod)
-  if (TS_DEBUG)
-    printk (KERN_DEBUG "PTP set time called vaule:%lli\n",
-	    timespec64_to_ns (ts));
-  uint64_t newvalue;
+    //if (TIME_DBG_mod)
+    if (TS_DEBUG)
+        printk (KERN_DEBUG "PTP set time called vaule:%lli\n",
+                timespec64_to_ns (ts));
+    uint64_t newvalue;
 
 
 
-  newvalue = timespec64_to_ns (ts);
-  //spin_lock_irqsave (&hardwareLock, flags);
-  INR_SPI_MMI_write (newvalue & 0xffffffff,
-		     (C_BASE_ADDR_RTC << 8) +
-		     C_SUB_ADDR_RTC_CTRLD_OFFSET_LOW);
-  INR_SPI_MMI_write ((newvalue >> 32) & 0xffffffff,
-		     (C_BASE_ADDR_RTC << 8) +
-		     C_SUB_ADDR_RTC_CTRLD_OFFSET_HIGH);
-  // INR_SPI_MMI_write(1,(C_BASE_ADDR_RTC<<8)+  C_SUB_ADDR_RTC_CLKSEL);
-  //spin_unlock_irqrestore (&hardwareLock, flags);
-  if (TS_DEBUG)
-    printk (KERN_DEBUG "PTP adjtime called new value:%lli\n", newvalue);
+    newvalue = timespec64_to_ns (ts);
+    //spin_lock_irqsave (&hardwareLock, flags);
+    INR_SPI_MMI_write (newvalue & 0xffffffff,
+                       (C_BASE_ADDR_RTC << 8) +
+                       C_SUB_ADDR_RTC_CTRLD_OFFSET_LOW);
+    INR_SPI_MMI_write ((newvalue >> 32) & 0xffffffff,
+                       (C_BASE_ADDR_RTC << 8) +
+                       C_SUB_ADDR_RTC_CTRLD_OFFSET_HIGH);
+    // INR_SPI_MMI_write(1,(C_BASE_ADDR_RTC<<8)+  C_SUB_ADDR_RTC_CLKSEL);
+    //spin_unlock_irqrestore (&hardwareLock, flags);
+    if (TS_DEBUG)
+        printk (KERN_DEBUG "PTP adjtime called new value:%lli\n", newvalue);
 
-  return 0;
+    return 0;
 }
 
 //*****************************************************************************************************************
@@ -429,10 +409,10 @@ INR_TIME_ptp_settime (struct ptp_clock_info *ptp, const struct timespec64 *ts)
 */
 static int
 INR_TIME_ptp_enable (struct ptp_clock_info *ptp, struct ptp_clock_request *rq,
-		     int on)
+                     int on)
 {
 
-  return 0;
+    return 0;
 }
 
 //*****************************************************************************************************************
@@ -444,7 +424,7 @@ void
 INR_RT_tx_ts_tread_wakeup ()
 {
 
-  wake_up_interruptible (&INR_RT_tx_ts_waittingqueu);
+    wake_up_interruptible (&INR_RT_tx_ts_waittingqueu);
 }
 
 //*****************************************************************************************************************
@@ -455,24 +435,23 @@ INR_RT_tx_ts_tread_wakeup ()
 int
 INR_RT_tx_ts_thread (void *nix)
 {
-  DECLARE_WAITQUEUE (wait1, current);
-  allow_signal (SIGKILL);
-  add_wait_queue (&INR_RT_tx_ts_waittingqueu, &wait1);
-  while (1)
-    {
-      set_current_state (TASK_INTERRUPTIBLE);
-      schedule ();
-      INR_TIME_TX_transmit_interrupt (0);
-      INR_TIME_TX_transmit_interrupt (1);
-      INR_TIME_TX_transmit_interrupt (2);
+    DECLARE_WAITQUEUE (wait1, current);
+    allow_signal (SIGKILL);
+    add_wait_queue (&INR_RT_tx_ts_waittingqueu, &wait1);
+    while (1) {
+        set_current_state (TASK_INTERRUPTIBLE);
+        schedule ();
+        INR_TIME_TX_transmit_interrupt (0);
+        INR_TIME_TX_transmit_interrupt (1);
+        INR_TIME_TX_transmit_interrupt (2);
 
-      if (signal_pending (current))
-	break;			//exit on thermination
+        if (signal_pending (current))
+            break;			//exit on thermination
 
     }
-  set_current_state (TASK_RUNNING);
-  remove_wait_queue (&INR_RT_tx_ts_waittingqueu, &wait1);
-  return 0;
+    set_current_state (TASK_RUNNING);
+    remove_wait_queue (&INR_RT_tx_ts_waittingqueu, &wait1);
+    return 0;
 }
 
 //*****************************************************************************************************************
@@ -483,21 +462,20 @@ INR_RT_tx_ts_thread (void *nix)
 int
 INR_RT_tx_ts_force_thread (void *nix)	// contains empirical thesholds..but it works ;)
 {
-  DECLARE_WAITQUEUE (wait2, current);
-  allow_signal (SIGKILL);
-  add_wait_queue (&INR_RT_tx_ts_force_waittingqueu, &wait2);
-  while (1)
-    {
-      set_current_state (TASK_INTERRUPTIBLE);
-      schedule ();
-      //INR_SPI_MMI_write(0x100,(C_BASE_ADDR_SPI_LOWER<<8)+C_SUB_ADDR_SPI_INT_STATUS);// force interrupt
-      if (signal_pending (current))
-	break;			//exit on thermination
+    DECLARE_WAITQUEUE (wait2, current);
+    allow_signal (SIGKILL);
+    add_wait_queue (&INR_RT_tx_ts_force_waittingqueu, &wait2);
+    while (1) {
+        set_current_state (TASK_INTERRUPTIBLE);
+        schedule ();
+        //INR_SPI_MMI_write(0x100,(C_BASE_ADDR_SPI_LOWER<<8)+C_SUB_ADDR_SPI_INT_STATUS);// force interrupt
+        if (signal_pending (current))
+            break;			//exit on thermination
 
     }
-  set_current_state (TASK_RUNNING);
-  remove_wait_queue (&INR_RT_tx_ts_force_waittingqueu, &wait2);
-  return 0;
+    set_current_state (TASK_RUNNING);
+    remove_wait_queue (&INR_RT_tx_ts_force_waittingqueu, &wait2);
+    return 0;
 }
 
 //*****************************************************************************************************************
@@ -508,42 +486,37 @@ INR_RT_tx_ts_force_thread (void *nix)	// contains empirical thesholds..but it wo
 uint16_t
 INR_TIME_TX_add (struct sk_buff *skb)
 {
-  uint16_t waiting_queue_length = 0;
-  if (INR_TIME_enable)
-    {
-      down_killable (&INR_TIME_TX_add_sem);
-      INR_TIME_TX_vortex_current++;
-      if (INR_TIME_TX_vortex_current == 0)
-	INR_TIME_TX_vortex_current = 1;
-/*        if(INR_TIME_vortex[INR_TIME_TX_vortex_current].used) { //overrun detected, clear entry*/
-/*            if(INR_TIME_vortex[INR_TIME_TX_vortex_current].skb)skb_tx_timestamp(INR_TIME_vortex[INR_TIME_TX_vortex_current].skb);*/
-/*        }*/
-      INR_TIME_vortex[INR_TIME_TX_vortex_current].skb = skb_get(skb);
-      INR_TIME_vortex[INR_TIME_TX_vortex_current].used = 1;
-      if (INR_TIME_TX_vortex_current < INR_TIME_TX_vortex_lastread)
-	{
-	  waiting_queue_length =
-	    65535 - INR_TIME_TX_vortex_lastread + INR_TIME_TX_vortex_current;
-	}
-      else
-	{
-	  waiting_queue_length =
-	    INR_TIME_TX_vortex_current - INR_TIME_TX_vortex_lastread;
-	}
-      if (waiting_queue_length > MAX_TIME_TX_vortex_queue)
-	{
-	printk (KERN_DEBUG "manually wakeup TX confirmation \n");
-	  INR_RT_tx_ts_tread_wakeup ();	// if waiting for to much interrupts, call isr
-	  //wake_up_interruptible (&INR_RT_tx_ts_force_waittingqueu);
-	}
-      if (DEBUG)
-	printk (KERN_DEBUG
-		"Net TX skb stored in timevortex at position %i waiting for %i\n",
-		INR_TIME_TX_vortex_current, waiting_queue_length);
-up (&INR_TIME_TX_add_sem);
-      return INR_TIME_TX_vortex_current;
+    uint16_t waiting_queue_length = 0;
+    if (INR_TIME_enable) {
+        down_killable (&INR_TIME_TX_add_sem);
+        INR_TIME_TX_vortex_current++;
+        if (INR_TIME_TX_vortex_current == 0)
+            INR_TIME_TX_vortex_current = 1;
+        /*        if(INR_TIME_vortex[INR_TIME_TX_vortex_current].used) { //overrun detected, clear entry*/
+        /*            if(INR_TIME_vortex[INR_TIME_TX_vortex_current].skb)skb_tx_timestamp(INR_TIME_vortex[INR_TIME_TX_vortex_current].skb);*/
+        /*        }*/
+        INR_TIME_vortex[INR_TIME_TX_vortex_current].skb = skb_get(skb);
+        INR_TIME_vortex[INR_TIME_TX_vortex_current].used = 1;
+        if (INR_TIME_TX_vortex_current < INR_TIME_TX_vortex_lastread) {
+            waiting_queue_length =
+                65535 - INR_TIME_TX_vortex_lastread + INR_TIME_TX_vortex_current;
+        } else {
+            waiting_queue_length =
+                INR_TIME_TX_vortex_current - INR_TIME_TX_vortex_lastread;
+        }
+        if (waiting_queue_length > MAX_TIME_TX_vortex_queue) {
+            printk (KERN_DEBUG "manually wakeup TX confirmation \n");
+            INR_RT_tx_ts_tread_wakeup ();	// if waiting for to much interrupts, call isr
+            //wake_up_interruptible (&INR_RT_tx_ts_force_waittingqueu);
+        }
+        if (DEBUG)
+            printk (KERN_DEBUG
+                    "Net TX skb stored in timevortex at position %i waiting for %i\n",
+                    INR_TIME_TX_vortex_current, waiting_queue_length);
+        up (&INR_TIME_TX_add_sem);
+        return INR_TIME_TX_vortex_current;
     }
-  return 0;
+    return 0;
 }
 
 EXPORT_SYMBOL (INR_TIME_TX_add);
@@ -555,7 +528,7 @@ EXPORT_SYMBOL (INR_TIME_TX_add);
 struct ptp_clock *
 INR_TIME_get_ptp_clock ()
 {
-  return ptp_clock;
+    return ptp_clock;
 }
 
 EXPORT_SYMBOL (INR_TIME_get_ptp_clock);
@@ -630,13 +603,13 @@ EXPORT_SYMBOL (INR_TIME_get_ptp_clock);
 //*****************************************************************************************************************
 /**
 *enable function
-*@brief gets called from proc-fs 
+*@brief gets called from proc-fs
 */
 void
 RT_enable_fkt ()
 {
 
-  RT_SPI_init ();
+    RT_SPI_init ();
 
 
 }
@@ -644,13 +617,13 @@ RT_enable_fkt ()
 //*****************************************************************************************************************
 /**
 *exit function
-*@brief 
+*@brief
 */
 void
 RT_disable_fkt ()
 {
-  printk (KERN_DEBUG "Disable INR-RealTime-HAT SPI Module\n");
-  RT_SPI_exit ();
+    printk (KERN_DEBUG "Disable INR-RealTime-HAT SPI Module\n");
+    RT_SPI_exit ();
 
 
 }
@@ -658,33 +631,33 @@ RT_disable_fkt ()
 //*****************************************************************************************************************
 /**
 *init function
-*@brief 
+*@brief
 */
 static int __init
 RT_init (void)
 {
-  printk (KERN_DEBUG "Init INR-RealTime-HAT SPI Module\n");
-  PROC_FS_init ();
-  kthread_run (&INR_RT_tx_ts_thread, NULL, "INR_RT_tx_ts_thread");
-  kthread_run (&INR_RT_tx_ts_force_thread, NULL, "INR_RT_tx_ts_force_thread");
+    printk (KERN_DEBUG "Init INR-RealTime-HAT SPI Module\n");
+    PROC_FS_init ();
+    kthread_run (&INR_RT_tx_ts_thread, NULL, "INR_RT_tx_ts_thread");
+    kthread_run (&INR_RT_tx_ts_force_thread, NULL, "INR_RT_tx_ts_force_thread");
 
 
 
-  return 0;
+    return 0;
 }
 
 module_init (RT_init);
 //*****************************************************************************************************************
 /**
 *exit function
-*@brief 
+*@brief
 */
 static void __exit
 RT_exit (void)
 {
-  printk (KERN_DEBUG "Remove INR-RealTime-HAT SPI Module\n");
+    printk (KERN_DEBUG "Remove INR-RealTime-HAT SPI Module\n");
 
-  PROC_FS_exit ();
+    PROC_FS_exit ();
 
 
 }

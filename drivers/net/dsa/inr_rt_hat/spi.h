@@ -29,8 +29,8 @@ int INR_SPI_interrupt_thread (void *nix);
 void INR_SPI_autocmd (uint32_t * addr, uint8_t write);
 union address
 {
-  uint32_t addr;
-  uint8_t bytes[4];
+    uint32_t addr;
+    uint8_t bytes[4];
 };
 #define DEBUG 0
 #define SPI_DEBUG 0

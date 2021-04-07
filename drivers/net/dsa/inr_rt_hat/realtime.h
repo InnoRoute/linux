@@ -22,15 +22,15 @@ void RT_disable_fkt (void);
 
 struct INR_TIME_TX_entry
 {
-  struct sk_buff *skb;	 /**<store skb*/
-  uint8_t used;	       /**<valid flag*/
-  uint32_t timestamp;
+    struct sk_buff *skb;	 /**<store skb*/
+    uint8_t used;	       /**<valid flag*/
+    uint32_t timestamp;
 };
 
 struct INR_TIME_timestamps
 {
-  uint64_t bridge;
-  uint64_t controlled;
+    uint64_t bridge;
+    uint64_t controlled;
 };
 
 //void INR_TIME_correct_HW_timestamp (uint32_t hw_value, struct INR_TIME_timestamps *ts);
@@ -41,11 +41,11 @@ void INR_TIME_init_ptp_clock (struct device *dev);
 static int INR_TIME_ptp_adjfreq (struct ptp_clock_info *ptp, s32 ppb);
 static int INR_TIME_ptp_adjtime (struct ptp_clock_info *ptp, s64 delta);
 static int INR_TIME_ptp_gettime (struct ptp_clock_info *ptp,
-				 struct timespec64 *ts);
+                                 struct timespec64 *ts);
 static int INR_TIME_ptp_settime (struct ptp_clock_info *ptp,
-				 const struct timespec64 *ts);
+                                 const struct timespec64 *ts);
 static int INR_TIME_ptp_enable (struct ptp_clock_info *ptp,
-				struct ptp_clock_request *rq, int on);
+                                struct ptp_clock_request *rq, int on);
 void INR_TIME_clear_vortex (void);
 struct ptp_clock *INR_TIME_get_ptp_clock (void);
 void INR_TIME_TX_transmit_interrupt (uint8_t port);
