@@ -112,10 +112,8 @@ INR_TIME_TX_transmit_interrupt (uint8_t port)
             entry_current &= 0xffff;
             if (entry_current) {
                 INR_TIME_TX_vortex_lastread = entry_current;
-                timestamp_L =
-                    INR_SPI_MMI_read ((C_BASE_ADDR_NET_LOWER << 8) + C_SUB_ADDR_NET_TX_CONF_L + ((port * 4) + 1) * 4);
-                timestamp_H =
-                    INR_SPI_MMI_read ((C_BASE_ADDR_NET_LOWER << 8) + C_SUB_ADDR_NET_TX_CONF_L + ((port * 4) + 2) * 4);
+                timestamp_L = INR_SPI_MMI_read ((C_BASE_ADDR_NET_LOWER << 8) + C_SUB_ADDR_NET_TX_CONF_L + ((port * 4) + 1) * 4);
+                timestamp_H = INR_SPI_MMI_read ((C_BASE_ADDR_NET_LOWER << 8) + C_SUB_ADDR_NET_TX_CONF_L + ((port * 4) + 2) * 4);
                 timestamp =
                     (0x00000000ffffffff&(uint64_t) timestamp_L) | ((uint64_t) timestamp_H << 32);
                 //if (TS_DEBUG)

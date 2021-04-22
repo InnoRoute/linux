@@ -129,7 +129,8 @@ struct INR_DSA_TAG_TX		//from CPU
   uint32_t DSA_ETH_TYPE:16;
   uint32_t INGRESS_PORT:5;
   uint32_t EGRESS_PORT:5;
-  uint32_t STREAM_Q:6;
+  uint32_t STREAM_Q:5;
+  uint32_t DELAY_pkt:1;
   uint32_t TX_TIMESTAMP;
   uint32_t TX_CONFIRMATION_ID;
   uint32_t reserved;

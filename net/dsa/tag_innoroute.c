@@ -51,6 +51,7 @@ INR_tag_xmit_ll (struct sk_buff *skb,
       //time_queue=PTP_prio;
       is_ptp = 1;
     }
+    
 
 //spin_lock_irqsave(&tx_lock, flags);
 
@@ -114,6 +115,9 @@ INR_tag_xmit_ll (struct sk_buff *skb,
       break;
     }
   INR_tag->STREAM_Q = 0xF;	//don't care'
+  if(skb->priority>7)
+  	INR_tag->STREAM_Q=7;
+  else INR_tag->STREAM_Q=INR_tag->STREAM_Q&0x7;
   INR_tag->TX_TIMESTAMP = 0xFFFFFFFF;	//don't care'
   if (is_ptp)
     {				// if requested, ask for timestamp (skb_shinfo(skb)->tx_flags & SKBTX_HW_TSTAMP)||)
