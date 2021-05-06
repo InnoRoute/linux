@@ -604,7 +604,7 @@ RT_SPI_proc_read (uint32_t addr)
     semaphor = 1;
     nibbletwist ((uint8_t *) & addr, 4);
     if (spi_enabled) {
-        //down_killable (&INR_SPI_sem);
+        down_killable (&INR_SPI_sem);
         spi_write_then_read (spi_device, &addr, sizeof (addr) + extend, &data_r,
                              sizeof (data_r));
         nibbletwist ((uint8_t *) & data_r, 4);
@@ -615,7 +615,7 @@ RT_SPI_proc_read (uint32_t addr)
             nibbletwist ((uint8_t *) & err_data, 4);
 
         }
-//	up (&INR_SPI_sem);
+	up (&INR_SPI_sem);
         if (SPI_DEBUG || err_data)
             printk (KERN_DEBUG
                     "DEBUG: spi read proc 0x%08lx 0x%08lx error:0x%08lx\n", tmp,
@@ -650,7 +650,7 @@ RT_SPI_proc_write (uint32_t addr)
     for (i = 0; i < 4; i++)
         tx_buffer[i + 4] = tmp.bytes[3 - i];
     if (spi_enabled) {
-        //down_killable (&INR_SPI_sem);
+        down_killable (&INR_SPI_sem);
         spi_write (spi_device, &tx_buffer[0], sizeof (data_w) * 2);
         if (GET_SPI_ERROR) {
             nibbletwist ((uint8_t *) & err_addr, 4);
@@ -662,7 +662,7 @@ RT_SPI_proc_write (uint32_t addr)
                         "error: 0x%08lx on write to addr 0x%08lx data: 0x%08lx\n",
                         err_data, addr, data_w);
         }
-//up (&INR_SPI_sem);
+up (&INR_SPI_sem);
     }
     semaphor = 0;
 }
