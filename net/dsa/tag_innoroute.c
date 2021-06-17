@@ -10,7 +10,7 @@
 #include <linux/list.h>
 #include <linux/slab.h>
 #include <linux/spinlock.h>
-
+#include <linux/time.h>
 #include "dsa_priv.h"
 #include "tag_innoroute.h"
 DEFINE_SPINLOCK (tx_lock);
@@ -119,7 +119,7 @@ INR_tag_xmit_ll (struct sk_buff *skb,
   	INR_tag->STREAM_Q=7;
   else INR_tag->STREAM_Q=skb->priority&0x7;
   //printk("SKB_prio:%i\n",skb->priority);
-  INR_tag->TX_TIMESTAMP = 0xFFFFFFFF;	//don't care'
+  INR_tag->TX_TIMESTAMP = (uint32_t)ktime_get_real_ns()+1000000000;	//don't care'
   if (is_ptp)
     {				// if requested, ask for timestamp (skb_shinfo(skb)->tx_flags & SKBTX_HW_TSTAMP)||)
       INR_tag->TX_CONFIRMATION_ID = INR_TIME_TX_add (skb);
