@@ -39,6 +39,7 @@
 #include <asm/uaccess.h>
 #include <linux/sched.h>
 #include <linux/cdev.h>
+#include <linux/delay.h>
 
 
 #include "spi.h"
@@ -526,6 +527,7 @@ RT_SPI_read (uint32_t addr)
         spi_write_then_read (spi_device, &addr, sizeof (addr) + extend, &data,
                              sizeof (data));
         nibbletwist ((uint8_t *) & data, 4);
+        ndelay(SPI_IPG);
         if (GET_SPI_ERROR) {
             nibbletwist ((uint8_t *) & err_addr, 4);
             spi_write_then_read (spi_device, &err_addr, sizeof (err_addr),
@@ -568,6 +570,7 @@ RT_SPI_write (uint32_t addr, uint32_t data)
     if (spi_enabled) {
         down_killable (&INR_SPI_sem);
         spi_write (spi_device, &tx_buffer[0], sizeof (data) * 2);
+        ndelay(SPI_IPG);
         if (GET_SPI_ERROR) {
             nibbletwist ((uint8_t *) & err_addr, 4);
             spi_write_then_read (spi_device, &err_addr, sizeof (err_addr),
@@ -607,6 +610,7 @@ RT_SPI_proc_read (uint32_t addr)
         down_killable (&INR_SPI_sem);
         spi_write_then_read (spi_device, &addr, sizeof (addr) + extend, &data_r,
                              sizeof (data_r));
+        ndelay(SPI_IPG);
         nibbletwist ((uint8_t *) & data_r, 4);
         if (GET_SPI_ERROR) {
             nibbletwist ((uint8_t *) & err_addr, 4);
@@ -652,6 +656,7 @@ RT_SPI_proc_write (uint32_t addr)
     if (spi_enabled) {
         down_killable (&INR_SPI_sem);
         spi_write (spi_device, &tx_buffer[0], sizeof (data_w) * 2);
+        ndelay(SPI_IPG);
         if (GET_SPI_ERROR) {
             nibbletwist ((uint8_t *) & err_addr, 4);
             spi_write_then_read (spi_device, &err_addr, sizeof (err_addr),
@@ -735,7 +740,7 @@ RT_SPI_init ()
         //Register information about your slave device:
         struct spi_board_info spi_device_info = {
             .modalias = "INR-RTHAT",
-            .max_speed_hz = 10000000,	//speed your device (slave) can handle
+            .max_speed_hz = 50000000,	//speed your device (slave) can handle
             .bus_num = MY_BUS_NUM,
             .chip_select = 0,
             .mode = SPI_MODE_0,
