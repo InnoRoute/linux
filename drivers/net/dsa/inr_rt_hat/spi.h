@@ -10,6 +10,7 @@
 #define WR_MMI  0xC3
 #define RD_MMI  0xF0
 #define GET_SPI_ERROR 0
+#define SPI_IPG 200
 
 void RT_SPI_init (void);
 void RT_SPI_exit (void);
