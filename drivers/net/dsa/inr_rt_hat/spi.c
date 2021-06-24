@@ -66,7 +66,7 @@ static struct cdev *driver_object;
 static char *devname = "gpio_irq";
 static int rpi_irq_27;
 #define INTERRUPT_MASK 0x1C00	// just HC0..2
-#define SPI_IPG 200
+#define SPI_IPG 20
 
 static DECLARE_WAIT_QUEUE_HEAD (INR_SPI_int_waittingqueu);
 DEFINE_SEMAPHORE (INR_interrupt_sem);
