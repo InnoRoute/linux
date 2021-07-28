@@ -54,6 +54,7 @@ static uint64_t timediff = 1;
 static uint8_t clockjump = 0;
 DEFINE_SEMAPHORE (INR_TIME_TX_transmit_interrupt_sem);
 DEFINE_SEMAPHORE (INR_TIME_TX_add_sem);
+#define MAX_POLL_COUNT 16000
 //*****************************************************************************************************************
 /**
 *Clear Timevortex
@@ -81,17 +82,20 @@ INR_TIME_clear_vortex ()
     //wake_up_interruptible (&INR_RT_tx_ts_force_waittingqueu);
     //INR_TIME_TX_vortex_current=1;
     INR_TIME_TX_vortex_lastread=INR_TIME_TX_vortex_current;
-    INR_SPI_MMI_read ((C_BASE_ADDR_NET_LOWER << 8) + C_SUB_ADDR_NET_TX_CONF_L + ((0 * 4) + 0) * 4);
-    INR_SPI_MMI_read ((C_BASE_ADDR_NET_LOWER << 8) + C_SUB_ADDR_NET_TX_CONF_L + ((0 * 4) + 1) * 4);
-    INR_SPI_MMI_read ((C_BASE_ADDR_NET_LOWER << 8) + C_SUB_ADDR_NET_TX_CONF_L + ((0 * 4) + 2) * 4);
     
-    INR_SPI_MMI_read ((C_BASE_ADDR_NET_LOWER << 8) + C_SUB_ADDR_NET_TX_CONF_L + ((1 * 4) + 0) * 4);
-    INR_SPI_MMI_read ((C_BASE_ADDR_NET_LOWER << 8) + C_SUB_ADDR_NET_TX_CONF_L + ((1 * 4) + 1) * 4);
-    INR_SPI_MMI_read ((C_BASE_ADDR_NET_LOWER << 8) + C_SUB_ADDR_NET_TX_CONF_L + ((1 * 4) + 2) * 4);
-    
-    INR_SPI_MMI_read ((C_BASE_ADDR_NET_LOWER << 8) + C_SUB_ADDR_NET_TX_CONF_L + ((2 * 4) + 0) * 4);
-    INR_SPI_MMI_read ((C_BASE_ADDR_NET_LOWER << 8) + C_SUB_ADDR_NET_TX_CONF_L + ((2 * 4) + 1) * 4);
-    INR_SPI_MMI_read ((C_BASE_ADDR_NET_LOWER << 8) + C_SUB_ADDR_NET_TX_CONF_L + ((2 * 4) + 2) * 4);
+    for(i=0;i<10;i++){
+		  INR_SPI_MMI_read ((C_BASE_ADDR_NET_LOWER << 8) + C_SUB_ADDR_NET_TX_CONF_L + ((0 * 4) + 0) * 4);
+		  INR_SPI_MMI_read ((C_BASE_ADDR_NET_LOWER << 8) + C_SUB_ADDR_NET_TX_CONF_L + ((0 * 4) + 1) * 4);
+		  INR_SPI_MMI_read ((C_BASE_ADDR_NET_LOWER << 8) + C_SUB_ADDR_NET_TX_CONF_L + ((0 * 4) + 2) * 4);
+		  
+		  INR_SPI_MMI_read ((C_BASE_ADDR_NET_LOWER << 8) + C_SUB_ADDR_NET_TX_CONF_L + ((1 * 4) + 0) * 4);
+		  INR_SPI_MMI_read ((C_BASE_ADDR_NET_LOWER << 8) + C_SUB_ADDR_NET_TX_CONF_L + ((1 * 4) + 1) * 4);
+		  INR_SPI_MMI_read ((C_BASE_ADDR_NET_LOWER << 8) + C_SUB_ADDR_NET_TX_CONF_L + ((1 * 4) + 2) * 4);
+		  
+		  INR_SPI_MMI_read ((C_BASE_ADDR_NET_LOWER << 8) + C_SUB_ADDR_NET_TX_CONF_L + ((2 * 4) + 0) * 4);
+		  INR_SPI_MMI_read ((C_BASE_ADDR_NET_LOWER << 8) + C_SUB_ADDR_NET_TX_CONF_L + ((2 * 4) + 1) * 4);
+		  INR_SPI_MMI_read ((C_BASE_ADDR_NET_LOWER << 8) + C_SUB_ADDR_NET_TX_CONF_L + ((2 * 4) + 2) * 4);
+    }
 }
 
 EXPORT_SYMBOL (INR_TIME_clear_vortex);
@@ -115,8 +119,11 @@ INR_TIME_TX_transmit_interrupt (uint8_t port)
     uint64_t timestamp = 0;
     uint8_t last = 0;
     uint8_t i = 0;
+    uint16_t poll=0;
     if (INR_TIME_enable) {
         while ((entry_current > 0) && (last == 0)) {
+        	poll++;
+        	if (poll > MAX_POLL_COUNT) break;
             entry_current =	    INR_SPI_MMI_read ((C_BASE_ADDR_NET_LOWER << 8) + C_SUB_ADDR_NET_TX_CONF_L + ((port * 4) + 0) * 4);
             if (entry_current & (1 << 16))
                 last = 1;
@@ -137,6 +144,7 @@ INR_TIME_TX_transmit_interrupt (uint8_t port)
                     if (!INR_TIME_vortex[entry_current].skb) {
                         printk (KERN_DEBUG"error: TXtime got empty skb: 0x%llx\n",entry_current);
                         //goto unlock;
+                        
                        } else {
 
                     
