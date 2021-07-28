@@ -137,9 +137,9 @@ INR_TIME_TX_transmit_interrupt (uint8_t port)
                     if (!INR_TIME_vortex[entry_current].skb) {
                         printk (KERN_DEBUG"error: TXtime got empty skb: 0x%llx\n",entry_current);
                         //goto unlock;
-                        break;
+                       } else {
 
-                    }
+                    
 
                     struct skb_shared_hwtstamps *skbtimestamp =
                         skb_hwtstamps (INR_TIME_vortex[entry_current].skb);
@@ -161,6 +161,8 @@ INR_TIME_TX_transmit_interrupt (uint8_t port)
                     INR_TIME_vortex[entry_current].skb = NULL;
                     //unlock:
                     //spin_unlock_irqrestore (&tx_ts_lock, flags);
+                    
+                    }
                 } else if (DEBUG)
                     printk (KERN_DEBUG
                             "error: TXtime got point to empty timevortex.\n");
