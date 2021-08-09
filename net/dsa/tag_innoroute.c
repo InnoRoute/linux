@@ -198,7 +198,7 @@ INR_tag_rcv_ll (struct sk_buff *skb,
   /* Remove InnoRoute tag and update checksum */
   skb_pull_rcsum (skb, INR_TAG_LEN);
 
-  skb->offload_fwd_mark = 1;
+  skb->offload_fwd_mark = 0; //tel kernel we don't support hardware switch offloading yet
   //##timestamping
   struct INR_TIME_timestamps ts;
 #if DSA_TAG_VERSION == 1
