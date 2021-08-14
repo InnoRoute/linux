@@ -23,7 +23,7 @@
 extern struct ptp_clock *INR_TIME_get_ptp_clock (void);
 extern void INR_TIME_init_ptp_clock (struct device *dev);
 extern void INR_TIME_clear_vortex (void);
-uint8_t tx_timestamp_offload[3]={0}
+uint8_t tx_timestamp_offload[3]={0};
 
 struct hwtstamp_config INR_tstamp_config;
 
