@@ -122,7 +122,7 @@ INR_tag_xmit_ll (struct sk_buff *skb,
   	INR_tag->STREAM_Q=7;
   else INR_tag->STREAM_Q=skb->priority&0x7;
   //printk("SKB_prio:%i\n",skb->priority);
-  if get_tx_timestamp_offload(INR_tag->EGRESS_PORT){
+  if (get_tx_timestamp_offload(INR_tag->EGRESS_PORT)){
   	ts = ktime_to_timespec64(skb->tstamp);
   	skb->tstamp = ktime_set(0, 0);  	
   	INR_tag->TX_TIMESTAMP=cpu_to_le32(ts.tv_nsec);
