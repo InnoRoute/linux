@@ -23,10 +23,15 @@
 extern struct ptp_clock *INR_TIME_get_ptp_clock (void);
 extern void INR_TIME_init_ptp_clock (struct device *dev);
 extern void INR_TIME_clear_vortex (void);
+uint8_t tx_timestamp_offload[3]={0}
 
 struct hwtstamp_config INR_tstamp_config;
 
+uint8_t get_tx_timestamp_offload(uint8_t port){
 
+	return tx_timestamp_offload[port];
+}
+EXPORT_SYMBOL (get_tx_timestamp_offload);
 struct rt_hat_vlan {
     u16 members;
     u16 untagged;
@@ -293,7 +298,25 @@ INR_RT_hwtstamp_set (struct dsa_switch *ds, int port, struct ifreq *ifr)
 
 }
 
-
+int	INR_RT_setup_tc(struct dsa_switch *ds, int port,
+				 enum tc_setup_type type, void *type_data){
+				 switch(type){
+				 case TC_SETUP_QDISC_ETF:
+				 		tx_timestamp_offload[port]=1;
+				 		printk (KERN_DEBUG "INR_debug: enable tx send timestamp offload for port %i\n", port);
+						return 0;
+		
+					
+						default:
+					return -EOPNOTSUPP;
+				 
+				 
+				 
+				 }
+				 
+				 
+				 
+				 }
 
 int
 INR_RT_get_ts_info (struct dsa_switch *ds, int port,
@@ -345,6 +368,7 @@ static const struct dsa_switch_ops rt_hat_driver = {
 //      .port_rxtstamp          = mv88e6xxx_port_rxtstamp,
     .get_ts_info = INR_RT_get_ts_info,
     .port_hwtstamp_set = INR_RT_hwtstamp_set,
+    .port_setup_tc=INR_RT_setup_tc,
 };
 
 static int

@@ -28,6 +28,7 @@ unsigned long flags;
 
 extern void INR_TIME_correct_HW_timestamp (uint32_t hw_value, struct INR_TIME_timestamps *ts);	// import from spi module
 extern uint16_t INR_TIME_TX_add (struct sk_buff *skb);
+extern uint8_t get_tx_timestamp_offload(uint8_t port);
 
 
 //*****************************************************************************************************************
@@ -40,6 +41,7 @@ INR_tag_xmit_ll (struct sk_buff *skb,
 		 struct net_device *dev, unsigned int offset)
 {
   struct dsa_port *dp = dsa_slave_to_port (dev);
+  struct timespec64 ts;
   u16 queue = skb_get_queue_mapping (skb);
   uint8_t is_ptp = 0;
   skb_linearize (skb);
@@ -114,12 +116,25 @@ INR_tag_xmit_ll (struct sk_buff *skb,
       INR_tag->EGRESS_PORT = 0;
       break;
     }
+    
   INR_tag->STREAM_Q = 0x0;	
   if(skb->priority>7)
   	INR_tag->STREAM_Q=7;
   else INR_tag->STREAM_Q=skb->priority&0x7;
   //printk("SKB_prio:%i\n",skb->priority);
-  INR_tag->TX_TIMESTAMP = (uint32_t)ktime_get_real_ns()+1000000000;	//don't care'
+  if get_tx_timestamp_offload(INR_tag->EGRESS_PORT){
+  	ts = ktime_to_timespec64(skb->tstamp);
+  	skb->tstamp = ktime_set(0, 0);  	
+  	INR_tag->TX_TIMESTAMP=cpu_to_le32(ts.tv_nsec);
+  	  if (INR_debug_TX)
+    {
+      printk (KERN_ERR "INR DSR TX PORT:%i  add ts 0x%llx\n",INR_tag->EGRESS_PORT, INR_tag->TX_TIMESTAMP);
+    }
+  
+  
+  }else{
+  	INR_tag->TX_TIMESTAMP = (uint32_t)ktime_get_real_ns()+1000000000;	//don't care'
+  }
   if (is_ptp)
     {				// if requested, ask for timestamp (skb_shinfo(skb)->tx_flags & SKBTX_HW_TSTAMP)||)
       INR_tag->TX_CONFIRMATION_ID = INR_TIME_TX_add (skb);
