@@ -7,8 +7,8 @@
 **/
 #define INR_DSA_ETH_TYPE 0x813E
 #define INR_debug_RX 0
-#define INR_debug_TX 0
-#define DEBUG 0
+#define INR_debug_TX 1
+#define DEBUG 1
 #define DSA_TAG_VERSION 3
 
 

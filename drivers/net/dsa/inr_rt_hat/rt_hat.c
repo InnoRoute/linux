@@ -28,8 +28,10 @@ uint8_t tx_timestamp_offload[3]={0};
 struct hwtstamp_config INR_tstamp_config;
 
 uint8_t get_tx_timestamp_offload(uint8_t port){
-
-	return tx_timestamp_offload[port];
+	if ((port>0) && (port<3)){
+		return tx_timestamp_offload[port];
+	}else
+		return 0;
 }
 EXPORT_SYMBOL (get_tx_timestamp_offload);
 struct rt_hat_vlan {

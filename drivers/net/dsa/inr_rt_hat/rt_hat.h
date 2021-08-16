@@ -5,7 +5,7 @@
 *@copyright GNU Public License v3.
 *
 **/
-#define DEBUG 0
+#define DEBUG 1
 #ifndef __RT_HAT_H
 #define __RT_HAT_H
 
