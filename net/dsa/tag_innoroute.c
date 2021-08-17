@@ -123,6 +123,7 @@ INR_tag_xmit_ll (struct sk_buff *skb,
   else INR_tag->STREAM_Q=skb->priority&0x7;
   //printk("SKB_prio:%i\n",skb->priority);
   if (get_tx_timestamp_offload(INR_tag->EGRESS_PORT)){
+  //need queue >=8!!!
   	ts = ktime_to_timespec64(skb->tstamp);
   	skb->tstamp = ktime_set(0, 0);  	
   	INR_tag->TX_TIMESTAMP=cpu_to_le32(ts.tv_nsec);
@@ -263,7 +264,7 @@ INR_tag_xmit (struct sk_buff *skb, struct net_device *dev)
 
 //*****************************************************************************************************************
 /**
-*rx function highlevel
+*rx function highlevelhttps://jitsi.innoroute.eu/team
 *@brief call lowlevel
 */
 static struct sk_buff *
@@ -306,5 +307,5 @@ static struct dsa_tag_driver *dsa_tag_driver_array[] = {
 };
 
 module_dsa_tag_drivers (dsa_tag_driver_array);
-MODULE_SOFTDEP ("pre: INR_spi INR_RTHAT");
+MODULE_SOFTDEP ("pre: INR_spi");
 MODULE_LICENSE ("GPL");

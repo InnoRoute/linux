@@ -23,17 +23,9 @@
 extern struct ptp_clock *INR_TIME_get_ptp_clock (void);
 extern void INR_TIME_init_ptp_clock (struct device *dev);
 extern void INR_TIME_clear_vortex (void);
-uint8_t tx_timestamp_offload[3]={0};
+extern void set_tx_timestamp_offload(uint8_t port,uint8_t value);
 
-struct hwtstamp_config INR_tstamp_config;
 
-uint8_t get_tx_timestamp_offload(uint8_t port){
-	if ((port>0) && (port<3)){
-		return tx_timestamp_offload[port];
-	}else
-		return 0;
-}
-EXPORT_SYMBOL (get_tx_timestamp_offload);
 struct rt_hat_vlan {
     u16 members;
     u16 untagged;
@@ -304,7 +296,7 @@ int	INR_RT_setup_tc(struct dsa_switch *ds, int port,
 				 enum tc_setup_type type, void *type_data){
 				 switch(type){
 				 case TC_SETUP_QDISC_ETF:
-				 		tx_timestamp_offload[port]=1;
+				 		set_tx_timestamp_offload(port,1);
 				 		printk (KERN_DEBUG "INR_debug: enable tx send timestamp offload for port %i\n", port);
 						return 0;
 		

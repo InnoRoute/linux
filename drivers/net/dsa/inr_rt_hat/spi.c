@@ -71,6 +71,26 @@ static int rpi_irq_27;
 static DECLARE_WAIT_QUEUE_HEAD (INR_SPI_int_waittingqueu);
 DEFINE_SEMAPHORE (INR_interrupt_sem);
 DEFINE_SEMAPHORE (INR_SPI_sem);
+
+uint8_t tx_timestamp_offload[3]={0};
+
+struct hwtstamp_config INR_tstamp_config;
+
+uint8_t get_tx_timestamp_offload(uint8_t port){
+	if ((port>0) && (port<3)){
+		return tx_timestamp_offload[port];
+	}else
+		return 0;
+}
+EXPORT_SYMBOL (get_tx_timestamp_offload);
+
+set_tx_timestamp_offload(uint8_t port,uint8_t value){
+	if ((port>0) && (port<3)){
+		return tx_timestamp_offload[port]=val;
+	}
+
+}
+EXPORT_SYMBOL (set_tx_timestamp_offload);
 //*****************************************************************************************************************
 /**
 *spi interrupt thread
