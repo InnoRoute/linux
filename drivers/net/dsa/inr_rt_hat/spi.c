@@ -86,7 +86,7 @@ EXPORT_SYMBOL (get_tx_timestamp_offload);
 
 set_tx_timestamp_offload(uint8_t port,uint8_t value){
 	if ((port>0) && (port<3)){
-		return tx_timestamp_offload[port]=val;
+		return tx_timestamp_offload[port]=value;
 	}
 
 }
