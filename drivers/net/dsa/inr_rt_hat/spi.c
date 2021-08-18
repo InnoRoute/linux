@@ -77,7 +77,7 @@ uint8_t tx_timestamp_offload[3]={0};
 struct hwtstamp_config INR_tstamp_config;
 
 uint8_t get_tx_timestamp_offload(uint8_t port){
-	if ((port>0) && (port<3)){
+	if ((port>=0) && (port<3)){
 		return tx_timestamp_offload[port];
 	}else
 		return 0;
@@ -85,7 +85,7 @@ uint8_t get_tx_timestamp_offload(uint8_t port){
 EXPORT_SYMBOL (get_tx_timestamp_offload);
 
 set_tx_timestamp_offload(uint8_t port,uint8_t value){
-	if ((port>0) && (port<3)){
+	if ((port>=0) && (port<3)){
 		return tx_timestamp_offload[port]=value;
 	}
 
