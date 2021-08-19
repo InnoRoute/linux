@@ -133,7 +133,7 @@ INR_tag_xmit_ll (struct sk_buff *skb,
   	INR_tag->TX_TIMESTAMP=cpu_to_le32(ts.tv_nsec);
   	  if (INR_debug_TX)
     {
-      printk (KERN_ERR "INR DSR TX PORT:%i  add ts 0x%lx long 0x%llx\n",INR_tag->EGRESS_PORT, INR_tag->TX_TIMESTAMP,ts.tv_nsec);
+      printk (KERN_ERR "INR DSR TX PORT:%i  add ts 0x%lx long 0x%llx\n",INR_tag->EGRESS_PORT, INR_tag->TX_TIMESTAMP,skb->tstamp);
     }
   
   
