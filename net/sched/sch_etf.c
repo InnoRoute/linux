@@ -175,7 +175,7 @@ static int etf_enqueue_timesortedlist(struct sk_buff *nskb, struct Qdisc *sch,
 				  SO_EE_CODE_TXTIME_INVALID_PARAM);
 		return qdisc_drop(nskb, sch, to_free);
 	}
-
+printk(KERN_ERR "sch_etf packet ok\n");
 	while (*p) {
 		struct sk_buff *skb;
 
