@@ -99,8 +99,11 @@ static bool is_packet_valid(struct Qdisc *sch, struct sk_buff *nskb)
 
 skip:
 	now = q->get_time();
-	if (ktime_before(txtime, now) || ktime_before(txtime, q->last))
+	if (ktime_before(txtime, now) || ktime_before(txtime, q->last)){
+		printk(KERN_ERR "sch_etf drop  \n");
 		return false;
+	}
+		
 
 	return true;
 }
