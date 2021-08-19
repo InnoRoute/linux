@@ -18,6 +18,7 @@
 #include <linux/ptp_clock_kernel.h>
 #include <linux/timex.h>
 #include <linux/net_tstamp.h>
+#include <net/pkt_sched.h>
 
 #include "rt_hat.h"
 extern struct ptp_clock *INR_TIME_get_ptp_clock (void);
