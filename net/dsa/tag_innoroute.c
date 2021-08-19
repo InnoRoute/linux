@@ -127,7 +127,9 @@ INR_tag_xmit_ll (struct sk_buff *skb,
   	ts = ktime_to_timespec64(skb->tstamp);
   	skb->tstamp = ktime_set(0, 0);  
   	INR_tag->STREAM_Q|=0x8;	//need queue >=8!!!
+ #if DSA_TAG_VERSION >= 4
   	INR_tag->DELAY_pkt=1; // maybe also needed
+ #endif
   	INR_tag->TX_TIMESTAMP=cpu_to_le32(ts.tv_nsec);
   	  if (INR_debug_TX)
     {
