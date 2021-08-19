@@ -344,7 +344,7 @@ static ktime_t get_tcp_tstamp(struct taprio_sched *q, struct sk_buff *skb)
  *    b. The window might close before the transmission can be completed
  *       successfully. So, schedule the packet in the next open window.
  */
-static long get_packet_txtime(struct sk_buff *skb, struct Qdisc *sch)
+static ktime_t get_packet_txtime(struct sk_buff *skb, struct Qdisc *sch)
 {
 	ktime_t transmit_end_time, interval_end, interval_start, tcp_tstamp;
 	struct taprio_sched *q = qdisc_priv(sch);
