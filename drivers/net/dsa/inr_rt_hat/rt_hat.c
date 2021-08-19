@@ -294,12 +294,12 @@ INR_RT_hwtstamp_set (struct dsa_switch *ds, int port, struct ifreq *ifr)
 
 int	INR_RT_setup_tc(struct dsa_switch *ds, int port,
 				 enum tc_setup_type type, void *type_data){
-				 struct tc_etf_qopt_offload *settings=type_data;
+				 struct *tc_etf_qopt_offload settings=type_data;
 				 switch(type){
 				 case TC_SETUP_QDISC_ETF:
 				 						 	
-				 		set_tx_timestamp_offload(port,settings.enable);
-				 		printk (KERN_DEBUG "INR_debug: enable tx send timestamp offload for port %i to %i\n", port,settings.enable);
+				 		set_tx_timestamp_offload(port,settings->enable);
+				 		printk (KERN_DEBUG "INR_debug: enable tx send timestamp offload for port %i to %i\n", port,settings->enable);
 						return 0;
 		
 					
