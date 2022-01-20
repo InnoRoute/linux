@@ -182,6 +182,30 @@ SPI_write_proc_open (struct inode *inode, struct file *file)
 {
     return single_open (file, SPI_write_proc_show, NULL);
 }
+int32_t value = 0;
+static long SPI_write_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+{
+         switch(cmd) {
+                case WR_VALUE:
+                        if( copy_from_user(&value ,(int32_t*) arg, sizeof(value)) )
+                        {
+                                printk("Data Write : Err!\n");
+                        }
+                        printk("Value = %d\n", value);
+                        break;
+                case RD_VALUE:
+                        if( copy_to_user((int32_t*) arg, &value, sizeof(value)) )
+                        {
+                                printk("Data Read : Err!\n");
+                        }
+                        break;
+                default:
+                        printk("Unknown command:0x%lx\n",cmd);
+                        break;
+        }
+        return 0;
+}
+
 
 static const struct file_operations SPI_write = {
     .owner = THIS_MODULE,
@@ -189,8 +213,11 @@ static const struct file_operations SPI_write = {
     .write = SPI_write_write,
     .read = seq_read,
     .llseek = seq_lseek,
+    .unlocked_ioctl = SPI_write_ioctl,
     .release = single_release,
 };
+
+
 
 //*****************************************************************************************************************
 /**
