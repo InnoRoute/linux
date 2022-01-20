@@ -192,8 +192,7 @@ struct mdio_data {
 	uint32_t val;
 	};
 struct mdio_data value;
-value.addr=0;
-value.val=0;
+
 	
 static long SPI_write_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
