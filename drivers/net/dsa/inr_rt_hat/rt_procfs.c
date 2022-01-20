@@ -186,20 +186,30 @@ SPI_write_proc_open (struct inode *inode, struct file *file)
 {
     return single_open (file, SPI_write_proc_show, NULL);
 }
-int32_t value = 0;
+
+struct mdio_data {
+	uint32_t addr;
+	uint32_t val;
+	};
+struct mdio_data value;
+value.addr=0;
+value.val=0;
+	
 static long SPI_write_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 printk("command:0x%lx\n",cmd);
          switch(cmd) {
                 case WR_VALUE:
-                        if( copy_from_user(&value ,(int32_t*) arg, sizeof(value)) )
+                        if( copy_from_user(&value ,(uint64_t*) arg, sizeof(value)) )
                         {
                                 printk("Data Write : Err!\n");
                         }
-                        printk("Value = %d\n", value);
+                        printk("Value = %d\n", value.addr);
+                        value.addr++;
+                        copy_to_user((uint64_t*) arg, &value, sizeof(value));
                         break;
                 case RD_VALUE:
-                        if( copy_to_user((int32_t*) arg, &value, sizeof(value)) )
+                        if( copy_to_user((uint64_t*) arg, &value, sizeof(value)) )
                         {
                                 printk("Data Read : Err!\n");
                         }
