@@ -205,7 +205,7 @@ printk("command:0x%lx\n",cmd);
                         }
                         break;
                 default:
-                        printk("Unknown command\n");
+                        printk("Unknown command, try 0x%lx or 0x%lx\n",WR_VALUE,RD_VALUE);
                         break;
         }
         return 0;
