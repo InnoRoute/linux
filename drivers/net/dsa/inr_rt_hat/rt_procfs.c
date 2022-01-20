@@ -25,6 +25,9 @@
 #include "spi.h"
 #include "rt_procfs.h"
 
+#define WR_VALUE _IOW('a','a',int32_t*)
+#define RD_VALUE _IOR('a','b',int32_t*)
+
 #define PROCFS_MAX_SIZE		1024
 static char procfs_buffer[PROCFS_MAX_SIZE];
 static size_t procfs_buffer_size = 0;
@@ -186,6 +189,7 @@ SPI_write_proc_open (struct inode *inode, struct file *file)
 int32_t value = 0;
 static long SPI_write_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
+printk("command:0x%lx\n",cmd);
          switch(cmd) {
                 case WR_VALUE:
                         if( copy_from_user(&value ,(int32_t*) arg, sizeof(value)) )
@@ -201,7 +205,7 @@ static long SPI_write_ioctl(struct file *file, unsigned int cmd, unsigned long a
                         }
                         break;
                 default:
-                        printk("Unknown command:0x%lx\n",cmd);
+                        printk("Unknown command\n");
                         break;
         }
         return 0;
