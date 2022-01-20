@@ -20,6 +20,7 @@
 #include <linux/kthread.h>
 #include <asm/signal.h>
 #include <linux/semaphore.h>
+#include <linux/ioctl.h>
 #include "realtime.h"
 #include "spi.h"
 #include "rt_procfs.h"
