@@ -205,7 +205,7 @@ printk("command:0x%lx\n",cmd);
                         {
                                 printk("Data Write : Err!\n");
                         }
-                        printk("Value = %lx, addr= %lx\n",value.val, value.addr);
+                        printk("Value = 0x%lx, addr= 0x%lx\n",value.val, value.addr);
                         value.addr++;
                         value.val++;
                         copy_to_user((uint64_t*) arg, &value, sizeof(value));
