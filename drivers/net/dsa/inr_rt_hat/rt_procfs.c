@@ -25,8 +25,10 @@
 #include "spi.h"
 #include "rt_procfs.h"
 
-#define WR_VALUE _IOW('a','a',int32_t*)
-#define RD_VALUE _IOR('a','b',int32_t*)
+#define WR_VALUE 0x40046161
+//_IOW('a','a',int32_t*)
+#define RD_VALUE 0x80046162
+//_IOR('a','b',int32_t*)
 
 #define PROCFS_MAX_SIZE		1024
 static char procfs_buffer[PROCFS_MAX_SIZE];
@@ -203,8 +205,9 @@ printk("command:0x%lx\n",cmd);
                         {
                                 printk("Data Write : Err!\n");
                         }
-                        printk("Value = %d\n", value.addr);
+                        printk("Value = %lx, addr= %lx\n",value.val, value.addr);
                         value.addr++;
+                        value.val++;
                         copy_to_user((uint64_t*) arg, &value, sizeof(value));
                         break;
                 case RD_VALUE:
