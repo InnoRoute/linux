@@ -34,6 +34,8 @@
 static char procfs_buffer[PROCFS_MAX_SIZE];
 static size_t procfs_buffer_size = 0;
 static struct proc_dir_entry *reg1, *reg2, *reg3, *reg4, *reg5, *INR_proc_dir;
+struct mdio_data MDIO_value_rd;
+struct mdio_data MDIO_value_wd;
 //*****************************************************************************************************************
 /**
 *  proc write function
@@ -189,11 +191,8 @@ SPI_write_proc_open (struct inode *inode, struct file *file)
     return single_open (file, SPI_write_proc_show, NULL);
 }
 
-struct mdio_data {
-	uint32_t addr;
-	uint32_t val;
-	};
-struct mdio_data value;
+
+
 
 	
 static long SPI_write_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
@@ -201,20 +200,21 @@ static long SPI_write_ioctl(struct file *file, unsigned int cmd, unsigned long a
 printk("command:0x%lx\n",cmd);
          switch(cmd) {
                 case WR_VALUE:
-                        if( copy_from_user(&value ,(uint64_t*) arg, sizeof(value)) )
+                        if( copy_from_user(&mdio_data MDIO_value_wd ,(uint64_t*) arg, sizeof(mdio_data MDIO_value_wd)) )
                         {
                                 printk("Data Write : Err!\n");
                         }
-                        printk("Value = 0x%lx, addr= 0x%lx\n",value.val, value.addr);
-                        value.addr++;
-                        value.val++;
-                        copy_to_user((uint64_t*) arg, &value, sizeof(value));
+                        printk("Value = 0x%lx, addr= 0x%lx\n",mdio_data MDIO_value_wd.val, mdio_data MDIO_value_wd.addr);
+                        RT_SPI_write (mdio_data MDIO_value_wd.addr, mdio_data MDIO_value_wd.val)
                         break;
                 case RD_VALUE:
-                        if( copy_to_user((uint64_t*) arg, &value, sizeof(value)) )
+                        if( copy_from_user(&mdio_data MDIO_value_rd ,(uint64_t*) arg, sizeof(mdio_data MDIO_value_rd)) )
                         {
-                                printk("Data Read : Err!\n");
+                                printk("Data Write : Err!\n");
                         }
+                        printk("Value = 0x%lx, addr= 0x%lx\n",mdio_data MDIO_value_rd.val, mdio_data MDIO_value_rd.addr);
+                        mdio_data MDIO_value_rd.val=RT_SPI_read (mdio_data MDIO_value_rd.addr);
+                        copy_to_user((uint64_t*) arg, &mdio_data MDIO_value_rd, sizeof(mdio_data MDIO_value_rd));
                         break;
                 default:
                         printk("Unknown command, try 0x%lx or 0x%lx\n",WR_VALUE,RD_VALUE);
