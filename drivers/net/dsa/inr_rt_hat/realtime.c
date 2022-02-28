@@ -524,9 +524,10 @@ INR_TIME_TX_add (struct sk_buff *skb)
                 INR_TIME_TX_vortex_current - INR_TIME_TX_vortex_lastread;
         }
         if (waiting_queue_length > MAX_TIME_TX_vortex_queue) {
-            printk (KERN_DEBUG "manually wakeup TX confirmation \n");
+        if (WAKEUP_ON_CONFIRMATION_MISS){   printk (KERN_DEBUG "manually wakeup TX confirmation \n");
             INR_RT_tx_ts_tread_wakeup ();	// if waiting for to much interrupts, call isr
             //wake_up_interruptible (&INR_RT_tx_ts_force_waittingqueu);
+            }printk (KERN_DEBUG "TX confirmation missing don't wakeup' \n");
         }
         if (DEBUG)
             printk (KERN_DEBUG

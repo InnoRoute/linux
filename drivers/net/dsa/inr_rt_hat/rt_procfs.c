@@ -195,7 +195,7 @@ SPI_write_proc_open (struct inode *inode, struct file *file)
 
 
 	
-static long SPI_write_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+static long SPI_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 printk("command:0x%lx\n",cmd);
          switch(cmd) {
@@ -205,7 +205,7 @@ printk("command:0x%lx\n",cmd);
                                 printk("Data Write : Err!\n");
                         }
                         printk("Value = 0x%lx, addr= 0x%lx\n",MMI_value_wd.val, MMI_value_wd.addr);
-                        RT_SPI_write (MMI_value_wd.addr, MMI_value_wd.val)
+                        RT_SPI_write (MMI_value_wd.addr, MMI_value_wd.val);
                         break;
                 case RD_VALUE:
                         if( copy_from_user(&MMI_value_rd ,(uint64_t*) arg, sizeof(MMI_value_rd)) )
@@ -230,7 +230,7 @@ static const struct file_operations SPI_write = {
     .write = SPI_write_write,
     .read = seq_read,
     .llseek = seq_lseek,
-    .unlocked_ioctl = SPI_write_ioctl,
+    .unlocked_ioctl = SPI_ioctl,
     .release = single_release,
 };
 
