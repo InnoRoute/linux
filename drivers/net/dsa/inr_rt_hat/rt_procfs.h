@@ -8,7 +8,7 @@
 void PROC_FS_exit (void);
 int PROC_FS_init (void);
 
-struct mdio_data {
+struct MMI_data {
 	uint32_t addr;
 	uint32_t val;
 	};
