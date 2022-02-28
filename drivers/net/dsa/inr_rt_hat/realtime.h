@@ -15,7 +15,7 @@
 #define INR_TIME_base 1
 #define INR_TIME_MAX_pollcount 50
 #define MAX_TIME_TX_vortex_queue 3
-#define WAKEUP_ON_CONFIRMATION_MISS 0
+#define WAKEUP_ON_CONFIRMATION_MISS 1
 
 
 void RT_enable_fkt (void);
