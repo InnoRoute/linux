@@ -204,7 +204,7 @@ printk("command:0x%lx\n",cmd);
                         {
                                 printk("Data Write : Err!\n");
                         }
-                        printk("Value = 0x%lx, addr= 0x%lx\n",MMI_value_wd.val, MMI_value_wd.addr);
+                        if(DEBUG)printk("Value = 0x%lx, addr= 0x%lx\n",MMI_value_wd.val, MMI_value_wd.addr);
                         RT_SPI_write (MMI_value_wd.addr, MMI_value_wd.val);
                         break;
                 case RD_VALUE:
@@ -212,12 +212,12 @@ printk("command:0x%lx\n",cmd);
                         {
                                 printk("Data Write : Err!\n");
                         }
-                        printk("Value = 0x%lx, addr= 0x%lx\n",MMI_value_rd.val, MMI_value_rd.addr);
+                        if(DEBUG)printk("Value = 0x%lx, addr= 0x%lx\n",MMI_value_rd.val, MMI_value_rd.addr);
                         MMI_value_rd.val=RT_SPI_read (MMI_value_rd.addr);
                         copy_to_user((uint64_t*) arg, &MMI_value_rd, sizeof(MMI_value_rd));
                         break;
                 default:
-                        printk("Unknown command, try 0x%lx or 0x%lx\n",WR_VALUE,RD_VALUE);
+                        if(DEBUG)printk("Unknown command, try 0x%lx or 0x%lx\n",WR_VALUE,RD_VALUE);
                         break;
         }
         return 0;
