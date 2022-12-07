@@ -2,7 +2,7 @@
 *@file
 *@brief Distributed Switch Architecture driver for InnoRoute Realtime HAT
 *@author M.Ulbricht 2021 <ulbricht@innoroute.de>
-*@copyright GNU Public License v3.
+*@copyright GNU Public License v2.
 *
 **/
 #include <linux/platform_device.h>
