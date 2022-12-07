@@ -2,7 +2,7 @@
 *@file
 *@brief spi definitions
 *@author M.Ulbricht 2021
-*@copyright GNU Public License v3.
+*@copyright GNU Public License v2.
 *
 **/
 #define WR_LOCAL  0x0F
