@@ -2,7 +2,7 @@
 *@file
 *@brief InnoRoute Realtime-Hat DSA-tag definitions
 *@author M.Ulbricht 2021
-*@copyright GNU Public License v3.
+*@copyright GNU Public License v2.
 *
 **/
 #define INR_DSA_ETH_TYPE 0x813E
