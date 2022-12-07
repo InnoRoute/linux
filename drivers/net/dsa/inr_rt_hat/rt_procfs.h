@@ -2,7 +2,7 @@
 *@file
 *@brief pric-fs definitions
 *@author M.Ulbricht 2021
-*@copyright GNU Public License v3.
+*@copyright GNU Public License v2.
 *
 **/
 void PROC_FS_exit (void);
