@@ -2,7 +2,7 @@
 *@file
 *@brief realtime definitions
 *@author M.Ulbricht 2021
-*@copyright GNU Public License v3.
+*@copyright GNU Public License v2.
 *
 **/
 #include "tn_env.h"
