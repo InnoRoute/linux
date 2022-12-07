@@ -2,7 +2,7 @@
 *@file
 *@brief Realtimehat dsa-bridge definition
 *@author M.Ulbricht 2021 <ulbricht@innoroute.de>
-*@copyright GNU Public License v3.
+*@copyright GNU Public License v2.
 *
 **/
 #include <linux/kernel.h>
