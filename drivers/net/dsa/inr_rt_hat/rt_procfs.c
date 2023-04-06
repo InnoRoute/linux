@@ -81,13 +81,13 @@ SPI_file_proc_open (struct inode *inode, struct file *file)
     return single_open (file, SPI_file_proc_show, NULL);
 }
 
-static const struct file_operations SPI_file = {
-    .owner = THIS_MODULE,
-    .open = SPI_file_proc_open,
-    .write = SPI_file_write,
-    .read = seq_read,
-    .llseek = seq_lseek,
-    .release = single_release,
+static const struct proc_ops SPI_file = {
+//    .owner = THIS_MODULE,
+    .proc_open = SPI_file_proc_open,
+    .proc_write = SPI_file_write,
+    .proc_read = seq_read,
+    .proc_lseek = seq_lseek,
+    .proc_release = single_release,
 };
 
 //*****************************************************************************************************************
@@ -136,13 +136,13 @@ SPI_data_proc_open (struct inode *inode, struct file *file)
     return single_open (file, SPI_data_proc_show, NULL);
 }
 
-static const struct file_operations SPI_data = {
-    .owner = THIS_MODULE,
-    .open = SPI_data_proc_open,
-    .write = SPI_data_write,
-    .read = seq_read,
-    .llseek = seq_lseek,
-    .release = single_release,
+static const struct proc_ops SPI_data = {
+//    .owner = THIS_MODULE,
+    .proc_open = SPI_data_proc_open,
+    .proc_write = SPI_data_write,
+    .proc_read = seq_read,
+    .proc_lseek = seq_lseek,
+    .proc_release = single_release,
 };
 
 //*****************************************************************************************************************
@@ -224,14 +224,14 @@ printk("command:0x%lx\n",cmd);
 }
 
 
-static const struct file_operations SPI_write = {
-    .owner = THIS_MODULE,
-    .open = SPI_write_proc_open,
-    .write = SPI_write_write,
-    .read = seq_read,
-    .llseek = seq_lseek,
-    .unlocked_ioctl = SPI_ioctl,
-    .release = single_release,
+static const struct proc_ops SPI_write = {
+//    .owner = THIS_MODULE,
+    .proc_open = SPI_write_proc_open,
+    .proc_write = SPI_write_write,
+    .proc_read = seq_read,
+    .proc_lseek = seq_lseek,
+    .proc_ioctl = SPI_ioctl,
+    .proc_release = single_release,
 };
 
 
@@ -282,13 +282,13 @@ SPI_read_proc_open (struct inode *inode, struct file *file)
     return single_open (file, SPI_read_proc_show, NULL);
 }
 
-static const struct file_operations SPI_read = {
-    .owner = THIS_MODULE,
-    .open = SPI_read_proc_open,
-    .write = SPI_read_write,
-    .read = seq_read,
-    .llseek = seq_lseek,
-    .release = single_release,
+static const struct proc_ops SPI_read = {
+//    .owner = THIS_MODULE,
+    .proc_open = SPI_read_proc_open,
+    .proc_write = SPI_read_write,
+    .proc_read = seq_read,
+    .proc_lseek = seq_lseek,
+    .proc_release = single_release,
 };
 
 //*****************************************************************************************************************
