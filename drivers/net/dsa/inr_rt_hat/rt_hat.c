@@ -69,7 +69,7 @@ struct rt_hat_priv {
 
 static struct phy_device *phydevs[PHY_MAX_ADDR];
 
-static enum dsa_tag_protocol
+enum dsa_tag_protocol
 rt_hat_get_protocol (struct dsa_switch *ds, int port) {
     dev_dbg (ds->dev, "%s: port: %d\n", __func__, port);
     if (DEBUG)
