@@ -57,6 +57,9 @@ source "drivers/net/dsa/ocelot/Kconfig"
 
 source "drivers/net/dsa/qca/Kconfig"
 
+
+source "drivers/net/dsa/inr_rt_hat/Kconfig"
+
 source "drivers/net/dsa/sja1105/Kconfig"
 
 config NET_DSA_QCA8K

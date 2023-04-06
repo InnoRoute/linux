@@ -1,0 +1,425 @@
+/**
+*@file
+*@brief proc-fs functions
+*@author M.Ulbricht 2021
+*@copyright GNU Public License v3.
+*
+**/
+#include <linux/kernel.h>
+#include <linux/export.h>
+#include <linux/version.h>
+#include <linux/module.h>
+#include <linux/pci.h>
+#include <linux/init.h>
+#include <linux/interrupt.h>
+#include <linux/delay.h>
+#include <linux/netdevice.h>
+#include <linux/etherdevice.h>
+#include <linux/proc_fs.h>
+#include <linux/openvswitch.h>
+#include <linux/kthread.h>
+#include <asm/signal.h>
+#include <linux/semaphore.h>
+#include <linux/ioctl.h>
+#include "realtime.h"
+#include "spi.h"
+#include "rt_procfs.h"
+
+#define WR_VALUE 0x40046161
+//_IOW('a','a',int32_t*)
+#define RD_VALUE 0x80046162
+//_IOR('a','b',int32_t*)
+
+#define PROCFS_MAX_SIZE		1024
+static char procfs_buffer[PROCFS_MAX_SIZE];
+static size_t procfs_buffer_size = 0;
+static struct proc_dir_entry *reg1, *reg2, *reg3, *reg4, *reg5, *INR_proc_dir;
+struct MMI_data MMI_value_rd;
+struct MMI_data MMI_value_wd;
+//*****************************************************************************************************************
+/**
+*  proc write function
+*
+*/
+ssize_t
+SPI_file_write (struct file *file, const char *buffer, size_t count,
+                loff_t * data)
+{
+    procfs_buffer_size = count;
+    if (procfs_buffer_size > PROCFS_MAX_SIZE) {
+        procfs_buffer_size = PROCFS_MAX_SIZE;
+    }
+    if (copy_from_user (procfs_buffer, buffer, procfs_buffer_size)) {
+        return -EFAULT;
+    }
+    uint32_t tmp = 0;
+    RT_SPI_file_write (procfs_buffer, procfs_buffer_size);
+    return procfs_buffer_size;
+}
+
+//*****************************************************************************************************************
+/**
+*  proc print function
+*
+*/
+static int
+SPI_file_proc_show (struct seq_file *m, void *v)
+{
+    seq_printf (m, "0x%x\n", 0);
+
+    return 0;
+}
+
+//*****************************************************************************************************************
+/**
+*  proc open function
+*
+*/
+static int
+SPI_file_proc_open (struct inode *inode, struct file *file)
+{
+    return single_open (file, SPI_file_proc_show, NULL);
+}
+
+static const struct file_operations SPI_file = {
+    .owner = THIS_MODULE,
+    .open = SPI_file_proc_open,
+    .write = SPI_file_write,
+    .read = seq_read,
+    .llseek = seq_lseek,
+    .release = single_release,
+};
+
+//*****************************************************************************************************************
+/**
+*  proc write function
+*
+*/
+ssize_t
+SPI_data_write (struct file *file, const char *buffer, size_t count,
+                loff_t * data)
+{
+    procfs_buffer_size = count;
+    if (procfs_buffer_size > PROCFS_MAX_SIZE) {
+        procfs_buffer_size = PROCFS_MAX_SIZE;
+    }
+    if (copy_from_user (procfs_buffer, buffer, procfs_buffer_size)) {
+        return -EFAULT;
+    }
+    uint32_t tmp = 0;
+    sscanf (procfs_buffer, "%d", &tmp);
+    RT_SPI_set_w_data (tmp);
+    return procfs_buffer_size;
+}
+
+//*****************************************************************************************************************
+/**
+*  proc print function
+*
+*/
+static int
+SPI_data_proc_show (struct seq_file *m, void *v)
+{
+    seq_printf (m, "0x%x\n", RT_SPI_get_r_data ());
+
+    return 0;
+}
+
+//*****************************************************************************************************************
+/**
+*  proc open function
+*
+*/
+static int
+SPI_data_proc_open (struct inode *inode, struct file *file)
+{
+    return single_open (file, SPI_data_proc_show, NULL);
+}
+
+static const struct file_operations SPI_data = {
+    .owner = THIS_MODULE,
+    .open = SPI_data_proc_open,
+    .write = SPI_data_write,
+    .read = seq_read,
+    .llseek = seq_lseek,
+    .release = single_release,
+};
+
+//*****************************************************************************************************************
+/**
+*  proc write function
+*
+*/
+ssize_t
+SPI_write_write (struct file *file, const char *buffer, size_t count,
+                 loff_t * data)
+{
+    procfs_buffer_size = count;
+    if (procfs_buffer_size > PROCFS_MAX_SIZE) {
+        procfs_buffer_size = PROCFS_MAX_SIZE;
+    }
+    if (copy_from_user (procfs_buffer, buffer, procfs_buffer_size)) {
+        return -EFAULT;
+    }
+    uint32_t tmp = 0;
+    sscanf (procfs_buffer, "%d", &tmp);
+    RT_SPI_proc_write (tmp);
+    return procfs_buffer_size;
+}
+
+//*****************************************************************************************************************
+/**
+*  proc print function
+*
+*/
+static int
+SPI_write_proc_show (struct seq_file *m, void *v)
+{
+    seq_printf (m, "%i\n", RT_SPI_get_semaphor ());
+
+    return 0;
+}
+
+//*****************************************************************************************************************
+/**
+*  proc open function
+*
+*/
+static int
+SPI_write_proc_open (struct inode *inode, struct file *file)
+{
+    return single_open (file, SPI_write_proc_show, NULL);
+}
+
+
+
+
+	
+static long SPI_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+{
+printk("command:0x%lx\n",cmd);
+         switch(cmd) {
+                case WR_VALUE:
+                        if( copy_from_user(&MMI_value_wd ,(uint64_t*) arg, sizeof(MMI_value_wd)) )
+                        {
+                                printk("Data Write : Err!\n");
+                        }
+                        if(DEBUG)printk("Value = 0x%lx, addr= 0x%lx\n",MMI_value_wd.val, MMI_value_wd.addr);
+                        RT_SPI_write (MMI_value_wd.addr, MMI_value_wd.val);
+                        break;
+                case RD_VALUE:
+                        if( copy_from_user(&MMI_value_rd ,(uint64_t*) arg, sizeof(MMI_value_rd)) )
+                        {
+                                printk("Data Write : Err!\n");
+                        }
+                        if(DEBUG)printk("Value = 0x%lx, addr= 0x%lx\n",MMI_value_rd.val, MMI_value_rd.addr);
+                        MMI_value_rd.val=RT_SPI_read (MMI_value_rd.addr);
+                        copy_to_user((uint64_t*) arg, &MMI_value_rd, sizeof(MMI_value_rd));
+                        break;
+                default:
+                        if(DEBUG)printk("Unknown command, try 0x%lx or 0x%lx\n",WR_VALUE,RD_VALUE);
+                        break;
+        }
+        return 0;
+}
+
+
+static const struct file_operations SPI_write = {
+    .owner = THIS_MODULE,
+    .open = SPI_write_proc_open,
+    .write = SPI_write_write,
+    .read = seq_read,
+    .llseek = seq_lseek,
+    .unlocked_ioctl = SPI_ioctl,
+    .release = single_release,
+};
+
+
+
+//*****************************************************************************************************************
+/**
+*  proc write function
+*
+*/
+ssize_t
+SPI_read_write (struct file *file, const char *buffer, size_t count,
+                loff_t * data)
+{
+    procfs_buffer_size = count;
+    if (procfs_buffer_size > PROCFS_MAX_SIZE) {
+        procfs_buffer_size = PROCFS_MAX_SIZE;
+    }
+    if (copy_from_user (procfs_buffer, buffer, procfs_buffer_size)) {
+        return -EFAULT;
+    }
+    uint32_t tmp = 0;
+    sscanf (procfs_buffer, "%d", &tmp);
+    RT_SPI_proc_read (tmp);
+    return procfs_buffer_size;
+}
+
+//*****************************************************************************************************************
+/**
+*  proc print function
+*
+*/
+static int
+SPI_read_proc_show (struct seq_file *m, void *v)
+{
+    seq_printf (m, "%i\n", RT_SPI_get_semaphor ());
+
+    return 0;
+}
+
+//*****************************************************************************************************************
+/**
+*  proc open function
+*
+*/
+static int
+SPI_read_proc_open (struct inode *inode, struct file *file)
+{
+    return single_open (file, SPI_read_proc_show, NULL);
+}
+
+static const struct file_operations SPI_read = {
+    .owner = THIS_MODULE,
+    .open = SPI_read_proc_open,
+    .write = SPI_read_write,
+    .read = seq_read,
+    .llseek = seq_lseek,
+    .release = single_release,
+};
+
+//*****************************************************************************************************************
+/**
+*  proc write function
+*
+*/
+ssize_t
+RT_enable_write (struct file *file, const char *buffer, size_t count,
+                 loff_t * data)
+{
+    procfs_buffer_size = count;
+    if (procfs_buffer_size > PROCFS_MAX_SIZE) {
+        procfs_buffer_size = PROCFS_MAX_SIZE;
+    }
+    if (copy_from_user (procfs_buffer, buffer, procfs_buffer_size)) {
+        return -EFAULT;
+    }
+    uint32_t tmp = 0;
+    sscanf (procfs_buffer, "%d", &tmp);
+    if (tmp) {
+        RT_enable_fkt ();
+    } else {
+        RT_disable_fkt ();
+    }
+    return procfs_buffer_size;
+}
+
+//*****************************************************************************************************************
+/**
+*  proc print function
+*
+*/
+static int
+RT_enable_proc_show (struct seq_file *m, void *v)
+{
+    seq_printf (m, "%i\n", 1234);
+
+    return 0;
+}
+
+//*****************************************************************************************************************
+/**
+*  proc open function
+*
+*/
+static int
+RT_enable_proc_open (struct inode *inode, struct file *file)
+{
+    return single_open (file, RT_enable_proc_show, NULL);
+}
+
+static const struct file_operations RT_enable = {
+    .owner = THIS_MODULE,
+    .open = RT_enable_proc_open,
+    .write = RT_enable_write,
+    .read = seq_read,
+    .llseek = seq_lseek,
+    .release = single_release,
+};
+
+int
+PROC_FS_init ()
+{
+    INR_proc_dir = proc_mkdir ("InnoRoute", NULL);
+    if (!INR_proc_dir) {
+        printk (KERN_ALERT "Error creating proc entry");
+        return -ENOMEM;
+    }
+
+    reg1 = proc_create ("RT_enable", 0666, INR_proc_dir, &RT_enable);
+    if (reg1 == NULL) {
+        remove_proc_entry ("RT_enable", INR_proc_dir);
+        printk (KERN_ALERT "Error: Could not initialize /proc/%s\n",
+                "RT_enable");
+        return -ENOMEM;
+    }
+    printk (KERN_INFO "/proc/%s created\n", "RT_enable");
+
+    reg2 = proc_create ("SPI_read", 0666, INR_proc_dir, &SPI_read);
+    if (reg2 == NULL) {
+        remove_proc_entry ("SPI_read", INR_proc_dir);
+        printk (KERN_ALERT "Error: Could not initialize /proc/%s\n",
+                "SPI_read");
+        return -ENOMEM;
+    }
+    printk (KERN_INFO "/proc/%s created\n", "SPI_read");
+
+    reg3 = proc_create ("SPI_write", 0666, INR_proc_dir, &SPI_write);
+    if (reg3 == NULL) {
+        remove_proc_entry ("SPI_write", INR_proc_dir);
+        printk (KERN_ALERT "Error: Could not initialize /proc/%s\n",
+                "SPI_write");
+        return -ENOMEM;
+    }
+    printk (KERN_INFO "/proc/%s created\n", "SPI_write");
+
+    reg4 = proc_create ("SPI_data", 0666, INR_proc_dir, &SPI_data);
+    if (reg4 == NULL) {
+        remove_proc_entry ("SPI_data", INR_proc_dir);
+        printk (KERN_ALERT "Error: Could not initialize /proc/%s\n",
+                "SPI_data");
+        return -ENOMEM;
+    }
+    printk (KERN_INFO "/proc/%s created\n", "SPI_data");
+    reg5 = proc_create ("SPI_file", 0666, INR_proc_dir, &SPI_file);
+    if (reg5 == NULL) {
+        remove_proc_entry ("SPI_file", INR_proc_dir);
+        printk (KERN_ALERT "Error: Could not initialize /proc/%s\n",
+                "SPI_file");
+        return -ENOMEM;
+    }
+    printk (KERN_INFO "/proc/%s created\n", "SPI_file");
+
+    return 0;
+}
+
+void
+PROC_FS_exit ()
+{
+    remove_proc_entry ("RT_enable", INR_proc_dir);
+    printk (KERN_INFO "/proc/InnoRoute/%s removed\n", "RT_enable");
+    remove_proc_entry ("SPI_read", INR_proc_dir);
+    printk (KERN_INFO "/proc/InnoRoute/%s removed\n", "SPI_read");
+    remove_proc_entry ("SPI_write", INR_proc_dir);
+    printk (KERN_INFO "/proc/InnoRoute/%s removed\n", "SPI_write");
+    remove_proc_entry ("SPI_data", INR_proc_dir);
+    printk (KERN_INFO "/proc/InnoRoute/%s removed\n", "SPI_data");
+    remove_proc_entry ("SPI_file", INR_proc_dir);
+    printk (KERN_INFO "/proc/InnoRoute/%s removed\n", "SPI_file");
+
+    remove_proc_entry ("InnoRoute", NULL);
+    printk (KERN_INFO "/proc/%s removed\n", "InnoRoute");
+}
