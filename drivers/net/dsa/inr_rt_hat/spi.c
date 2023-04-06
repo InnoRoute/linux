@@ -84,7 +84,7 @@ uint8_t get_tx_timestamp_offload(uint8_t port){
 }
 EXPORT_SYMBOL (get_tx_timestamp_offload);
 
-set_tx_timestamp_offload(uint8_t port,uint8_t value){
+void set_tx_timestamp_offload(uint8_t port,uint8_t value){
 	if ((port>=0) && (port<3)){
 		return tx_timestamp_offload[port]=value;
 	}
@@ -123,7 +123,7 @@ INR_SPI_interrupt_thread (void *nix)	// contains empirical thesholds..but it wor
 *SPI ISR
 *@brief handle spi interrupt
 */
-INR_SPI_MMI_interrupt ()
+void INR_SPI_MMI_interrupt ()
 {
 
     down_killable (&INR_interrupt_sem);
