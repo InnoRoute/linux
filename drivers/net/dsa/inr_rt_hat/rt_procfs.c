@@ -197,7 +197,7 @@ SPI_write_proc_open (struct inode *inode, struct file *file)
 	
 static long SPI_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
-printk("command:0x%lx\n",cmd);
+if(DEBUG)printk("command:0x%lx\n",cmd);
          switch(cmd) {
                 case WR_VALUE:
                         if( copy_from_user(&MMI_value_wd ,(uint64_t*) arg, sizeof(MMI_value_wd)) )
