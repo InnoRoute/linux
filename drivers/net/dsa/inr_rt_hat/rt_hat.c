@@ -344,6 +344,19 @@ INR_RT_get_ts_info (struct dsa_switch *ds, int port,
     return 0;
 }
 
+static int rt_hat_change_mtu(struct dsa_switch *ds, int port, int mtu)
+{
+	struct rt_hat_priv *ps = ds->priv;
+	ps->ports[port].max_frame = mtu+100;
+
+	return 0;
+}
+
+static int rt_hat_max_mtu(struct dsa_switch *ds, int port)
+{
+	return 1400;
+}
+
 static const struct dsa_switch_ops rt_hat_driver = {
     .get_tag_protocol = rt_hat_get_protocol,
     .setup = rt_hat_setup,
@@ -353,6 +366,8 @@ static const struct dsa_switch_ops rt_hat_driver = {
     .get_ethtool_phy_stats = rt_hat_get_ethtool_stats,
     .phy_read = rt_hat_phy_read,
     .phy_write = rt_hat_phy_write,
+    .port_change_mtu	= rt_hat_change_mtu,
+    .port_max_mtu		= rt_hat_max_mtu,
 //    .port_bridge_join = rt_hat_port_bridge_join,
 //    .port_bridge_leave = rt_hat_port_bridge_leave,
 //    .port_stp_state_set = rt_hat_port_stp_state_set,
