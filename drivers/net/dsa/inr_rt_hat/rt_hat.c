@@ -346,8 +346,8 @@ INR_RT_get_ts_info (struct dsa_switch *ds, int port,
 
 static int rt_hat_change_mtu(struct dsa_switch *ds, int port, int mtu)
 {
-	struct rt_hat_priv *ps = ds->priv;
-	//ps->ports[port].max_frame = mtu+100;
+	struct rt_hat_priv *priv = ds->priv;
+	priv->ports[port].mtu = mtu;
 
 	return 0;
 }
