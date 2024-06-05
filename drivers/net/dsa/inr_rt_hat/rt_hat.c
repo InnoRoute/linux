@@ -54,6 +54,7 @@ static struct rt_hat_mib_entry rt_hat_mibs[] = {
 
 struct rt_hat_port {
     struct rt_hat_mib_entry mib[__RT_HAT_CNT_MAX];
+    int mtu;
 };
 
 #define RT_HAT_VLANS	5
