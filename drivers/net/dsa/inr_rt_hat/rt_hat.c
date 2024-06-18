@@ -348,13 +348,17 @@ INR_RT_get_ts_info (struct dsa_switch *ds, int port,
 static int rt_hat_change_mtu(struct dsa_switch *ds, int port, int mtu)
 {
 	struct rt_hat_priv *priv = ds->priv;
+	    if (DEBUG)
+        printk (KERN_DEBUG "DEBUG: Passed %s %d \n", __FUNCTION__, __LINE__);
 	priv->ports[port].mtu = mtu;
 
-	return 0;
+	return mtu;
 }
 
 static int rt_hat_max_mtu(struct dsa_switch *ds, int port)
 {
+	if (DEBUG)
+        printk (KERN_DEBUG "DEBUG: Passed %s %d \n", __FUNCTION__, __LINE__);
 	return 1400;
 }
 
