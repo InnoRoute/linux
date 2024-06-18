@@ -359,7 +359,7 @@ static int rt_hat_max_mtu(struct dsa_switch *ds, int port)
 {
 	if (DEBUG)
         printk (KERN_DEBUG "DEBUG: Passed %s %d \n", __FUNCTION__, __LINE__);
-	return 1500-INR_TAG_LEN;
+	return 1500;
 }
 
 static const struct dsa_switch_ops rt_hat_driver = {
