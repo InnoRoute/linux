@@ -425,7 +425,7 @@ rt_hat_drv_probe (struct mdio_device *mdiodev)
     ps->bus = mdiodev->bus;
     ds->num_tx_queues = RTHAT_NUM_EGRESS_QUEUES;
     
-    ps->netdev->mtu=1400;
+    ps->netdev->mtu=9000;
 
 
     dev_set_drvdata (&mdiodev->dev, ds);
