@@ -1522,8 +1522,8 @@ static int dsa_slave_change_mtu(struct net_device *dev, int new_mtu)
 	mtu_limit = min_t(int, master->max_mtu, dev->max_mtu);
 	old_master_mtu = master->mtu;
 	new_master_mtu = largest_mtu + cpu_dp->tag_ops->overhead;
-	if (new_master_mtu > mtu_limit)
-		return -ERANGE;
+//	if (new_master_mtu > mtu_limit)
+//		return -ERANGE;
 
 	/* If the master MTU isn't over limit, there's no need to check the CPU
 	 * MTU, since that surely isn't either.
