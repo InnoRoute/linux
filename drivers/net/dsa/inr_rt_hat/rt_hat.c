@@ -352,7 +352,7 @@ static int rt_hat_change_mtu(struct dsa_switch *ds, int port, int mtu)
         printk (KERN_DEBUG "DEBUG: Passed %s %d \n", __FUNCTION__, __LINE__);
 	priv->ports[port].mtu = mtu;
 
-	return mtu;
+	return 0;
 }
 
 static int rt_hat_max_mtu(struct dsa_switch *ds, int port)
